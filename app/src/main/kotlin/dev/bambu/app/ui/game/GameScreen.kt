@@ -28,11 +28,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.bambu.app.R
 import dev.bambu.app.render.GameCanvas
 import dev.bambu.app.render.GameFrame
 import dev.bambu.app.render.rememberGameSprites
@@ -118,16 +120,21 @@ private fun Hud(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "P1 ${state.scores.getOrElse(0) { 0 }} — ${state.scores.getOrElse(1) { 0 }} P2",
+            text =
+                stringResource(
+                    R.string.game_score,
+                    state.scores.getOrElse(0) { 0 },
+                    state.scores.getOrElse(1) { 0 },
+                ),
             color = Color.White,
             style = MaterialTheme.typography.titleMedium,
         )
         Text(
             text =
                 when {
-                    state.waitingForAi -> "Thinking…"
-                    state.currentPlayer in state.humanPlayers && state.humanPlayers.size == 1 -> "Your turn"
-                    else -> "Player ${state.currentPlayer + 1}"
+                    state.waitingForAi -> stringResource(R.string.game_thinking)
+                    state.humanPlayers.size == 1 -> stringResource(R.string.game_your_turn)
+                    else -> stringResource(R.string.game_player, state.currentPlayer + 1)
                 },
             color = Color.White,
             style = MaterialTheme.typography.titleMedium,
@@ -146,6 +153,7 @@ private fun WindIndicator(wind: Int) {
             else -> "·"
         }
     Text(
+        // Arrows and a number: nothing to translate, and the sign reads the same everywhere.
         text = "$arrow $wind",
         color = Color.White,
         style = MaterialTheme.typography.titleMedium,
@@ -177,7 +185,7 @@ private fun Controls(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         CompactSlider(
-            label = "ANG",
+            label = stringResource(R.string.game_angle),
             text = angleText,
             value = angle,
             range = G.ANGLE_MIN..G.ANGLE_MAX,
@@ -186,7 +194,7 @@ private fun Controls(
             modifier = Modifier.weight(1f),
         )
         CompactSlider(
-            label = "PWR",
+            label = stringResource(R.string.game_power),
             text = powerText,
             value = power,
             range = G.POWER_MIN..G.POWER_MAX,
@@ -206,7 +214,7 @@ private fun Controls(
                 }
             },
         ) {
-            Text("Repeat", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.game_repeat), style = MaterialTheme.typography.labelLarge)
         }
         Button(
             enabled = state.canAim && angle != null && power != null,
@@ -215,7 +223,10 @@ private fun Controls(
                 if (angle != null && power != null) onThrow(angle, power)
             },
         ) {
-            Text("Throw!", style = MaterialTheme.typography.labelLarge)
+            Text(
+                text = stringResource(if (state.canAim) R.string.game_throw else R.string.game_waiting),
+                style = MaterialTheme.typography.labelLarge,
+            )
         }
     }
 }

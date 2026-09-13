@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="menu_one_player">Un joueur</string>
+    <string name="menu_two_players">Deux joueurs, même appareil</string>
+    <string name="menu_bluetooth">Jouer en Bluetooth</string>
+    <string name="menu_bluetooth_note">L\'appairage Bluetooth arrive au prochain jalon.</string>
+    <string name="menu_settings">Paramètres</string>
+
+    <string name="setup_title">Réglages de la partie</string>
+    <string name="setup_rounds">Au meilleur des 5 — le premier à 3 manches</string>
+    <string name="setup_start">Commencer</string>
+    <string name="setup_start_fixed">Commencer avec une graine fixe</string>
+
+    <string name="level_easy">Facile</string>
+    <string name="level_medium">Moyen</string>
+    <string name="level_hard">Difficile</string>
+
+    <string name="game_angle">ANG</string>
+    <string name="game_power">PUI</string>
+    <string name="game_repeat">Répéter</string>
+    <string name="game_throw">Lancer !</string>
+    <string name="game_thinking">Réflexion…</string>
+    <string name="game_your_turn">À toi de jouer</string>
+    <string name="game_player">Joueur %1$d</string>
+    <string name="game_score">J1 %1$d — %2$d J2</string>
+
+    <string name="result_winner">Le joueur %1$d gagne</string>
+    <string name="result_play_again">Rejouer</string>
+    <string name="result_menu">Menu</string>
+
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_language_system">Langue du système</string>
+    <string name="settings_back">Retour</string>
+</resources>

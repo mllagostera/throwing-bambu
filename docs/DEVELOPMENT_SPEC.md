@@ -524,7 +524,13 @@ The UI does **not** live in the logical canvas. It sits on top, in native dp.
 - A large **Throw!** button.
 - In remote mode, lock the controls and show "Waiting for {nick}…" along with the link state.
 
-Navigation: `Menu → [One player | Two local | Bluetooth] → Match setup → Game → Result`.
+Navigation: `Menu → [One player | Two local | Bluetooth] → Match setup → Game → Result`, plus `Menu → Settings`.
+
+### Languages
+
+Every user-facing string lives in `res/values/strings.xml`, with `values-es`, `values-ca`, `values-fr` and `values-de` mirroring its keys. English is the base.
+
+The in-game picker overrides the context's configuration for the whole composition rather than going through `AppCompatDelegate`: that would mean adding AppCompat, changing the activity's base class and theme, and recreating the activity on every change. Each language is listed under its own name — someone who has landed in the wrong one has to be able to recognise their way out.
 
 ---
 

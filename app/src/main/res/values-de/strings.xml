@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="menu_one_player">Ein Spieler</string>
+    <string name="menu_two_players">Zwei Spieler, ein Gerät</string>
+    <string name="menu_bluetooth">Über Bluetooth spielen</string>
+    <string name="menu_bluetooth_note">Die Bluetooth-Kopplung kommt im nächsten Meilenstein.</string>
+    <string name="menu_settings">Einstellungen</string>
+
+    <string name="setup_title">Spieleinstellungen</string>
+    <string name="setup_rounds">Best of 5 — wer zuerst 3 Runden gewinnt</string>
+    <string name="setup_start">Starten</string>
+    <string name="setup_start_fixed">Mit festem Startwert starten</string>
+
+    <string name="level_easy">Leicht</string>
+    <string name="level_medium">Mittel</string>
+    <string name="level_hard">Schwer</string>
+
+    <string name="game_angle">WKL</string>
+    <string name="game_power">KRF</string>
+    <string name="game_repeat">Wiederholen</string>
+    <string name="game_throw">Werfen!</string>
+    <string name="game_thinking">Überlegt…</string>
+    <string name="game_your_turn">Du bist dran</string>
+    <string name="game_player">Spieler %1$d</string>
+    <string name="game_score">S1 %1$d — %2$d S2</string>
+
+    <string name="result_winner">Spieler %1$d gewinnt</string>
+    <string name="result_play_again">Nochmal spielen</string>
+    <string name="result_menu">Menü</string>
+
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_language">Sprache</string>
+    <string name="settings_language_system">Systemsprache</string>
+    <string name="settings_back">Zurück</string>
+</resources>

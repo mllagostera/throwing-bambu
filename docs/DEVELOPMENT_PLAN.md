@@ -339,7 +339,7 @@ The truncation test is exhaustive rather than representative — **every prefix 
 
 ---
 
-### M7 — RFCOMM, audio, settings and polish (4 d)
+### M7 — RFCOMM, audio, settings and polish (4 d) — *localisation already done*
 
 | ID | Task | Est. |
 |---|---|---|
@@ -348,7 +348,8 @@ The truncation test is exhaustive rather than representative — **every prefix 
 | T-50 | Audio: throw, explosion, victory, defeat; `SoundPool`, respects silent mode | 0.6 d |
 | T-51 | Persistent settings (DataStore): `speedMultiplier`, sound, default AI level, rounds to win | 0.4 d |
 | T-52 | Release build: R8, `proguard-rules`, signing keystore, signed release APK in CI; verify that obfuscation does not break the determinism tests | 0.5 d |
-| T-53 | Localisation, polish: transitions, empty states, accessibility of the numeric controls, `contentDescription` | 0.7 d |
+| ✅ T-53a | **Localisation, brought forward from M7**: every string in resources, five languages (en/es/ca/fr/de), in-game language picker | 0.4 d |
+| T-53b | Polish: transitions, empty states, accessibility of the numeric controls | 0.4 d |
 
 **DoD:** a full RFCOMM match on a device without GMS. An installable, playable release APK in all three modes.
 
