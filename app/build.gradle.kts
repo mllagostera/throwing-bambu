@@ -9,10 +9,33 @@ plugins {
  * packaged straight from `art/sprites` instead of being copied into the repository. A
  * second copy would drift the moment somebody regenerates the art.
  */
-val syncSprites by tasks.registering(Sync::class) {
-    from(rootProject.layout.projectDirectory.dir("art/sprites")) { include("*.png") }
-    into(layout.buildDirectory.dir("generated/assets/sprites"))
+abstract class SyncSpritesTask : DefaultTask() {
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val spriteDir: DirectoryProperty
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun sync() {
+        val target = outputDir.get().asFile.resolve("sprites")
+        target.deleteRecursively()
+        target.mkdirs()
+        spriteDir
+            .get()
+            .asFile
+            .listFiles()
+            ?.filter { it.isFile && it.extension == "png" }
+            ?.forEach { it.copyTo(target.resolve(it.name), overwrite = true) }
+    }
 }
+
+val syncSprites =
+    tasks.register<SyncSpritesTask>("syncSprites") {
+        spriteDir.set(rootProject.layout.projectDirectory.dir("art/sprites"))
+        outputDir.set(layout.buildDirectory.dir("generated/spriteAssets"))
+    }
 
 android {
     namespace = "dev.bambu.app"
@@ -37,8 +60,6 @@ android {
     buildFeatures {
         compose = true
     }
-
-    sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/assets"))
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -76,7 +97,14 @@ dependencies {
     testImplementation(libs.junit)
 }
 
-// The assets have to exist before they are merged into the APK.
-tasks.matching { it.name.startsWith("merge") && it.name.endsWith("Assets") }.configureEach {
-    dependsOn(syncSprites)
+/**
+ * Registering the directory through the variant API — rather than adding it to
+ * `sourceSets` and wiring task dependencies by name — is what makes every consumer pick
+ * it up: merging, packaging and lint alike. Wiring it by hand missed lint, and Gradle
+ * rightly refused to build.
+ */
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(syncSprites, SyncSpritesTask::outputDir)
+    }
 }
