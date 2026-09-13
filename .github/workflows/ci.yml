@@ -38,6 +38,39 @@ jobs:
           path: '**/build/reports/tests/**'
           if-no-files-found: ignore
 
+      # El APK se genera en este mismo job, después de los tests: si algo está en rojo,
+      # no hay APK que descargar. Es el de depuración, firmado con la clave de debug y
+      # por tanto instalable tal cual (`adb install`, o descargándolo en el móvil).
+      # El de release necesita un keystore propio y llega en M7 (T-52).
+      - name: Generar APK de depuración
+        run: ./gradlew :app:assembleDebug
+
+      - name: Preparar el APK con un nombre reconocible
+        run: |
+          set -euo pipefail
+          version=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          mkdir -p artefactos
+          cp app/build/outputs/apk/debug/app-debug.apk \
+             "artefactos/throwing-bambu-${version}-debug-${GITHUB_SHA::7}.apk"
+          size=$(du -h artefactos/*.apk | cut -f1)
+          {
+            echo "### APK de depuración"
+            echo ""
+            echo "| Fichero | Tamaño |"
+            echo "|---|---|"
+            echo "| \`$(basename artefactos/*.apk)\` | $size |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-debug
+          path: artefactos/*.apk
+          retention-days: 14
+          # Si el APK no aparece, el job debe fallar: un artefacto vacío que pasa en
+          # verde es peor que un build roto.
+          if-no-files-found: error
+
   # El determinismo del §17.1 no se comprueba en una sola JVM: el mismo test de huella
   # se ejecuta en Linux y macOS. A partir de M1 aquí es donde salta una divergencia de
   # coma flotante, mucho antes de que aparezca como bug de red en M6.

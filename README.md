@@ -29,6 +29,26 @@ Juego de artillería por turnos para Android: dos gorilas, un skyline destructib
 
 Requisitos: JDK 17 o superior. La versión de Gradle la fija el wrapper.
 
+## APK
+
+Cada push genera un APK de depuración, **solo si los tests y el análisis estático pasan**. Se descarga desde la pestaña *Actions* → la ejecución correspondiente → artefacto **`apk-debug`**, con el nombre `throwing-bambu-<versión>-debug-<sha>.apk`. Se conserva 14 días.
+
+Va firmado con la clave de depuración de Android, así que se instala tal cual:
+
+```bash
+adb install throwing-bambu-0.1.0-debug-<sha>.apk
+```
+
+En el móvil hay que permitir la instalación de orígenes desconocidos para la app desde la que se abra el fichero.
+
+Para generarlo en local:
+
+```bash
+./gradlew :app:assembleDebug   # app/build/outputs/apk/debug/app-debug.apk
+```
+
+El APK de **release** requiere un keystore propio y no se genera todavía: entra en M7 junto con R8 y la configuración de firma (T-52 del plan).
+
 ## Arquitectura prevista
 
 ```
