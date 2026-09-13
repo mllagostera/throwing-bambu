@@ -1,5 +1,5 @@
 GIMP Palette
-Name: Gorilas EGA 16
+Name: EGA 16
 Columns: 16
 # Paleta cerrada del proyecto. El orden es normativo: el indice
 # de cada color es el que usan los ficheros art_*.py.

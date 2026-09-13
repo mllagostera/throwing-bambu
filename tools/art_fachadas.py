@@ -10,17 +10,20 @@ PNG se ve lo que el motor va a generar sin tener que compilar nada. La fila 0 a
 partir de x=4 se rellena con el color base para no pisar los cuatro pixeles
 clave.
 
-Restriccion de legibilidad: el platano es amarillo, asi que ninguna base puede
-ser amarilla. La ventana encendida si, porque mide 3x4 px.
+Restriccion de legibilidad, reescrita al cambiar el tema. El briefing prohibia la
+base amarilla porque el proyectil era un platano; el proyectil es ahora una cana
+de bambu, asi que **lo prohibido es el verde**: ninguna base puede ser verde (2)
+ni verde claro (10), o la cana desaparece al pasar por delante.
+
+Y al reves: las cinco variantes vuelven a encender las ventanas en amarillo, como
+pedia la referencia del original. Con el platano hubo que pasar tres a blanco
+porque se lo tragaban; con el bambu verde el amarillo ya no estorba, y el blanco
+ha pasado a ser el color malo: el panda es blanco y una fachada salpicada de
+ventanas blancas de 3x4 lo camufla. Se comprueba montando
+tools/preview_escena.py.
 
 La quinta variante es marron y no azul: azul (1) es el tono de la silueta del
 skyline, y un edificio jugable del mismo color que el fondo se pierde.
-
-Solo dos variantes encienden las ventanas en amarillo; las otras tres las
-encienden en blanco. Montando la escena de prueba (tools/preview_escena.py) con
-las cinco en amarillo, una fachada llena de ventanas amarillas de 3x4 se traga el
-platano, que mide 8x8 y es del mismo color. El blanco conserva la lectura de
-«ventana encendida» sin disputarle el color al proyectil.
 """
 
 from ega import Canvas
@@ -29,14 +32,15 @@ CELL = (16, 16)
 
 # (nombre, base, ventana encendida, ventana apagada, contorno)
 VARIANTES = [
-    ("cian",    3, 15, 1, 0),
+    ("cian",    3, 14, 1, 0),
     ("rojo",    4, 14, 0, 8),
     ("gris",    8, 14, 1, 0),
-    ("magenta", 5, 15, 1, 0),
-    ("marron",  6, 15, 1, 0),
+    ("magenta", 5, 14, 1, 0),
+    ("marron",  6, 14, 1, 0),
 ]
 
-AMARILLO = 14
+BLANCO = 15
+VERDES = (2, 10)
 
 _WIN_X = (2, 6, 10)     # ventanas de 3 px de ancho
 _WIN_Y = (2, 7)         # ventanas de 4 px de alto
@@ -69,7 +73,9 @@ def _celda(n: int, base: int, on: int, off: int, borde: int) -> Canvas:
 def frames():
     out = []
     for n, (nombre, base, on, off, borde) in enumerate(VARIANTES):
-        if base == AMARILLO:
-            raise ValueError(f"{nombre}: base amarilla, el platano desapareceria")
+        if base in VERDES:
+            raise ValueError(f"{nombre}: base verde, la cana de bambu desapareceria")
+        if base == BLANCO:
+            raise ValueError(f"{nombre}: base blanca, el panda desapareceria")
         out.append(_celda(n, base, on, off, borde))
     return out

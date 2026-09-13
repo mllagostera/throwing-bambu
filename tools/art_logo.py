@@ -51,28 +51,29 @@ _FONT = {
 GLYPH_W, GLYPH_H = 14, 20     # 7x10 ampliado x2
 TRACKING = 2                  # separacion entre glifos, en px finales
 
-# Platano de adorno, dibujado a resolucion final (no es el sprite de juego
-# ampliado: ese mide 8x8 y al x2 delataria el escalado).
+# Cana de bambu de adorno, dibujada a resolucion final (no es el sprite de juego
+# ampliado: ese mide 8x8 y al x2 delataria el escalado). Aqui si hay sitio para
+# los nudos y para dos hojas, que a 8x8 no cabian.
 _PLATANO = [
-    "................",
-    "...000..........",
-    "..06E60.........",
-    "..0EEE0.........",
-    "..0EEE0.........",
-    "..0EEE0.........",
-    "..0EEEE0........",
-    "...0EEEE0.......",
-    "...0EEEEE0......",
-    "....0EEEEE0.....",
-    ".....0EEEEE0....",
-    "......0EEEE60...",
-    ".......0EEE0....",
-    "........000.....",
-    "................",
-    "................",
+    ".....000000.....",
+    ".....0AAAA0.....",
+    ".....0AAAA0000..",
+    ".....0AAAA0AA0..",     # hoja derecha
+    ".....0AAAA0000..",
+    ".....022220.....",     # nudo
+    "..0000AAAA0.....",
+    "..0AA0AAAA0.....",     # hoja izquierda
+    "..0000AAAA0.....",
+    ".....0AAAA0.....",
+    ".....022220.....",     # nudo
+    ".....0AAAA0.....",
+    ".....0AAAA0.....",
+    ".....0AAAA0.....",
+    ".....022220.....",     # nudo
+    ".....000000.....",
 ]
 PLATANO_W = 16
-HUECO_PLATANO = 6
+HUECO_PLATANO = 4
 
 
 def _ink(texto: str):
@@ -129,6 +130,6 @@ def build() -> Canvas:
     _render(c, ink1, x1, y1)
     _render(c, ink2, x2, y2)
 
-    plat = Canvas.from_ascii(_PLATANO, expect_w=16, expect_h=16, name="logo/platano")
-    c.blit(plat, x2 + w2 + HUECO_PLATANO, y2 + 3)
+    plat = Canvas.from_ascii(_PLATANO, expect_w=16, expect_h=16, name="logo/bambu")
+    c.blit(plat, x2 + w2 + HUECO_PLATANO, y2 + 2)
     return c

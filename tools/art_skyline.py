@@ -6,9 +6,10 @@ centrada ni ningun edificio memorable que aparezca solo en pantallas anchas. Si
 un jugador lo ve en 460 y otro en 330, ven el mismo fondo.
 
 Silueta plana en azul (1), sin volumen, anclada al borde inferior. Los puntos de
-ventana van en azul claro (9), no en amarillo: el platano es amarillo y un fondo
-salpicado de puntos amarillos compite con el proyectil justo donde hay que
-seguirlo con la vista.
+ventana van en azul claro (9) y no en amarillo: el amarillo es el color de las
+ventanas encendidas de las fachadas jugables, y repetirlo aqui borra la
+diferencia entre lo que esta delante y lo que esta detras. En azul claro la banda
+se queda donde le toca, al fondo.
 
 La distribucion se genera con un LCG de semilla fija, asi que el PNG es
 reproducible bit a bit desde este fichero.

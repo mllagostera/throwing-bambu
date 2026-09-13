@@ -14,10 +14,10 @@ import os
 
 from PIL import Image
 
-import art_banana
+import art_bambu
 import art_boom
 import art_fachadas
-import art_gorila
+import art_panda
 import art_skyline
 import art_sol
 import ega
@@ -103,13 +103,13 @@ def main():
 
     tejados = _edificios(img, art_fachadas.frames())
 
-    gor = art_gorila.frames()
+    gor = art_panda.frames()
     _pegar(img, gor[1], tejados[1][0] - 12, tejados[1][1] - 24)
     _pegar(img, gor[0], tejados[4][0] - 12, tejados[4][1] - 24)
     _pegar(img, gor[5], tejados[6][0] - 12, tejados[6][1] - 24)
 
-    _pegar(img, art_banana.frames()[1], 150, 60)
-    _pegar(img, art_banana.frames()[3], 196, 46)
+    _pegar(img, art_bambu.frames()[1], 150, 60)
+    _pegar(img, art_bambu.frames()[3], 196, 46)
     _pegar(img, art_boom.frames()[3], tejados[3][0] - 16, tejados[3][1] - 8)
 
     prev = os.path.join(ART, "preview")

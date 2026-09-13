@@ -11,9 +11,10 @@ Comprueba, pieza por pieza:
   - ningun pixel con alfa entre 1 y 254;
   - dimensiones de tira y de celda exactas;
   - el pivote declarado cae donde dice el documento;
-  - y las restricciones especificas: caja de colision del gorila, radio del
-    fotograma de pico de la explosion, pixeles clave de las fachadas, recorte
-    del skyline.
+  - y las restricciones especificas: caja de colision del panda, radio del
+    fotograma de pico de la explosion, pixeles clave de las fachadas (ninguna
+    base verde, que se comeria la cana, ni blanca, que se comeria al panda) y
+    recorte del skyline.
 """
 
 import math
@@ -35,8 +36,8 @@ EGA = {
 
 # fichero -> (ancho, alto, ancho de celda, alto de celda, n fotogramas)
 INVENTARIO = {
-    "gorila.png":   (144, 24, 24, 24, 6),
-    "banana.png":   (32, 8, 8, 8, 4),
+    "panda.png":    (144, 24, 24, 24, 6),
+    "bambu.png":    (32, 8, 8, 8, 4),
     "boom.png":     (256, 32, 32, 32, 8),
     "sol.png":      (40, 20, 20, 20, 2),
     "fachadas.png": (80, 16, 16, 16, 5),
@@ -114,8 +115,8 @@ def comunes(nombre):
     return img, px
 
 
-def check_gorila():
-    img, px = comunes("gorila.png")
+def check_panda():
+    img, px = comunes("panda.png")
     if not img:
         return
     nombres = ["idle", "brazo_izq", "brazo_der", "pecho_1", "pecho_2", "muerto"]
@@ -123,22 +124,22 @@ def check_gorila():
         ox = n * 24
         pts = opacos(px, img.width, img.height, ox, 0, ox + 23, 23)
         if not pts:
-            fallo(f"gorila/{nom}: fotograma vacio")
+            fallo(f"panda/{nom}: fotograma vacio")
             continue
         x0, y0, x1, y1 = bbox(pts)
         x0, x1 = x0 - ox, x1 - ox
         # El pivote (12,24) se apoya en el tejado: todo fotograma toca y=23.
         if y1 != 23:
-            fallo(f"gorila/{nom}: no se apoya en el borde inferior (y max {y1})")
+            fallo(f"panda/{nom}: no se apoya en el borde inferior (y max {y1})")
         # La caja de colision es 16x20 en x=4..19: nada del cuerpo puede salirse
         # de ella salvo brazos y punos, que el briefing autoriza en el margen.
         dentro = [p for p in pts if 4 <= p[0] - ox <= 19 and p[1] >= 4]
         if len(dentro) < len(pts) * 0.6:
-            fallo(f"gorila/{nom}: la mayor parte del cuerpo cae fuera de 16x20")
+            fallo(f"panda/{nom}: la mayor parte del cuerpo cae fuera de 16x20")
         if nom == "idle" and (x0, y0, x1, y1) != (4, 4, 19, 23):
-            fallo(f"gorila/idle: caja {x0},{y0},{x1},{y1}, "
+            fallo(f"panda/idle: caja {x0},{y0},{x1},{y1}, "
                   f"debe ser exactamente 4,4,19,23 (16x20)")
-    print("  gorila: 6 fotogramas apoyados en el pivote (12,24)")
+    print("  panda: 6 fotogramas apoyados en el pivote (12,24)")
 
 
 def _centrado(nombre, pts, ox, cx, cy, tol, etiqueta):
@@ -149,15 +150,15 @@ def _centrado(nombre, pts, ox, cx, cy, tol, etiqueta):
               f"pivote ({cx},{cy}) con tolerancia {tol}")
 
 
-def check_banana():
-    img, px = comunes("banana.png")
+def check_bambu():
+    img, px = comunes("bambu.png")
     if not img:
         return
     for n in range(4):
         ox = n * 8
         pts = opacos(px, img.width, img.height, ox, 0, ox + 7, 7)
-        _centrado("banana", pts, ox, 3.5, 3.5, 0.5, f"f{n}")
-    print("  banana: 4 fotogramas centrados en el pivote (4,4)")
+        _centrado("bambu", pts, ox, 3.5, 3.5, 0.5, f"f{n}")
+    print("  bambu: 4 fotogramas centrados en el pivote (4,4)")
 
 
 def check_boom():
@@ -199,6 +200,8 @@ def check_fachadas():
     if not img:
         return
     amarillo = (0xFF, 0xFF, 0x55)
+    blanco = (0xFF, 0xFF, 0xFF)
+    verdes = {(0x00, 0xAA, 0x00), (0x55, 0xFF, 0x55)}
     vistos = []
     for n in range(5):
         ox = n * 16
@@ -207,8 +210,10 @@ def check_fachadas():
         for c in clave:
             if c not in EGA:
                 fallo(f"fachadas/{n}: pixel clave fuera de paleta {c}")
-        if base == amarillo:
-            fallo(f"fachadas/{n}: base amarilla; el platano desapareceria")
+        if base in verdes:
+            fallo(f"fachadas/{n}: base verde; la cana de bambu desapareceria")
+        if base == blanco:
+            fallo(f"fachadas/{n}: base blanca; el panda desapareceria")
         if base in (on, off, borde):
             fallo(f"fachadas/{n}: la base no contrasta con ventana o contorno")
         if on == off:
@@ -216,11 +221,13 @@ def check_fachadas():
         vistos.append(base)
     if len(set(vistos)) != 5:
         fallo("fachadas: hay variantes con el mismo color base")
+    n_blancas = sum(1 for n in range(5) if px[n * 16 + 1, 0][:3] == blanco)
+    if n_blancas > 2:
+        aviso(f"fachadas: {n_blancas} variantes encienden las ventanas en "
+              f"blanco; camuflan al panda, que es blanco")
     n_amarillas = sum(1 for n in range(5) if px[n * 16 + 1, 0][:3] == amarillo)
-    if n_amarillas > 2:
-        aviso(f"fachadas: {n_amarillas} variantes encienden las ventanas en "
-              f"amarillo; compiten con el platano")
-    print(f"  fachadas: 5 bases distintas, {n_amarillas} con ventana amarilla")
+    print(f"  fachadas: 5 bases distintas, {n_amarillas} con ventana amarilla, "
+          f"{n_blancas} con ventana blanca")
 
 
 def check_skyline():
@@ -267,13 +274,13 @@ def check_logo():
 
 
 def check_extras():
-    gpl = os.path.join(ART, "palette", "paleta_gorilas.gpl")
+    gpl = os.path.join(ART, "palette", "paleta_ega16.gpl")
     if not os.path.exists(gpl):
-        fallo("falta art/palette/paleta_gorilas.gpl")
+        fallo("falta art/palette/paleta_ega16.gpl")
     else:
         n = sum(1 for l in open(gpl) if l[:1].isdigit() or l[:1] == " ")
         if n != 16:
-            fallo(f"paleta_gorilas.gpl: {n} colores, deben ser 16")
+            fallo(f"paleta_ega16.gpl: {n} colores, deben ser 16")
     cielo = os.path.join(ART, "cielo.txt")
     if not os.path.exists(cielo):
         fallo("falta art/cielo.txt")
@@ -281,13 +288,13 @@ def check_extras():
         txt = open(cielo).read()
         if "arriba=" not in txt or "abajo=" not in txt:
             fallo("cielo.txt: faltan las claves arriba= y abajo=")
-    print("  paleta_gorilas.gpl y cielo.txt presentes")
+    print("  paleta_ega16.gpl y cielo.txt presentes")
 
 
 def main():
     print("Verificando art/ contra los criterios de aceptacion\n")
-    check_gorila()
-    check_banana()
+    check_panda()
+    check_bambu()
     check_boom()
     check_sol()
     check_fachadas()
