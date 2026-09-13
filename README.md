@@ -7,6 +7,7 @@ A turn-based artillery game for Android: two pandas, a destructible skyline and 
 | Document | Contents |
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | Rules for anyone — human or agent — working in this repository. |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Where the project stands, what is left, and what still needs a device. Start here. |
 | [`docs/DEVELOPMENT_SPEC.md`](docs/DEVELOPMENT_SPEC.md) | The technical **contract**: constants, signatures, protocol, mandatory tests. Changed here before it is changed in code. |
 | [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) | The **execution plan**: prior decisions, task breakdown, milestones M0–M7, test traceability, risks. |
 | [`docs/SPRITE_SPEC.md`](docs/SPRITE_SPEC.md) | The original art brief. Not edited — see AGENTS.md. |
@@ -14,7 +15,11 @@ A turn-based artillery game for Android: two pandas, a destructible skyline and 
 
 ## Status
 
-**M1 complete**: the deterministic core in `:core` — xorshift64\* RNG, trigonometric tables, scenario generation, physics with segment sampling, and 38 tests including the nine mandatory ones from §15. The art pipeline is delivered and the engine's palette is tied to it by a test. Next milestone: **M2** (geometric rendering and a local two-player match).
+**M5 complete.** The game is playable against the computer or against a person on the same device, with the delivered sprites and in five languages. Playing across a link is M6 — the protocol is built and tested, the radio is not.
+
+`:core` carries the deterministic engine: xorshift64\* RNG, trigonometry tables, scenario generation, physics with segment sampling, the match loop, the AI and the binary protocol. **74 tests**, run on Linux and again on macOS, because determinism cannot be verified on a single JVM.
+
+See the [roadmap](docs/ROADMAP.md) for what is left and what still needs a real device.
 
 ## Architecture
 
