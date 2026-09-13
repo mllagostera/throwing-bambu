@@ -68,20 +68,31 @@ object G {
 }
 ```
 
-**Calibración esperada** (verificar en M1): un disparo a 45° con potencia 68 debe recorrer ~300 px y durar ~2,6 s. Si no cuadra, se ajusta `GRAVITY`, no el resto.
+**Calibración esperada** (verificar en M1): un disparo a 45° con potencia 68 debe recorrer **~280 px** y durar **~2,65 s**.
+
+Derivación, para que nadie la vuelva a estimar a ojo: `v = 68 × POWER_TO_SPEED = 149,6 px/s`; alcance `v²·sin(2θ)/g = 149,6²/80 = 279,8 px`; tiempo `2·v·sin45°/g = 2,645 s`. El test §15.4 exige ±2 %, así que la cifra de referencia es **279,8 px**, no una redondeada al alza. Si la medición no cuadra con esto, el fallo está en la implementación, no en `GRAVITY`.
 
 ---
 
 ## 3. Anchura lógica del lienzo
 
 ```kotlin
-fun logicalWidth(screenW: Int, screenH: Int): Int {
-    val scale = maxOf(1, screenH / G.H)
-    return (screenW / scale).coerceIn(G.W_MIN, G.W_MAX)
+// core/Layout.kt — única fuente de verdad. El render NO recalcula la escala.
+fun logicalScale(screenW: Int, screenH: Int): Int {
+    var scale = maxOf(1, screenH / G.H)
+    while (scale > 1 && screenW / scale < G.W_MIN) scale--
+    return scale
 }
+
+fun logicalWidth(screenW: Int, screenH: Int): Int =
+    (screenW / logicalScale(screenW, screenH)).coerceIn(G.W_MIN, G.W_MAX)
 ```
 
-La altura lógica es **siempre 200**. La anchura varía; eso cambia cuántos edificios caben (6–9), no la escala de nada. Sobrante horizontal → barras laterales del color del cielo, no estiramiento.
+La escala no puede derivarse solo de la altura: con una escala tomada de `screenH` y un mínimo forzado de `W_MIN`, el lienzo puede acabar siendo **más ancho que la pantalla** (1080×2400 en vertical daría `scale = 12` y `320 × 12 = 3840 px` sobre 1080 disponibles). El bucle baja la escala hasta que `W_MIN` cabe de verdad.
+
+La altura lógica es **siempre 200**. La anchura varía; eso cambia cuántos edificios caben (entre 8 y 19, según anchuras sorteadas), no la escala de nada. Sobrante horizontal → barras laterales del color del cielo, no estiramiento.
+
+La pantalla de juego se bloquea en **landscape** (`android:screenOrientation="sensorLandscape"`). En vertical el lienzo cabe, pero la escala resultante desperdicia la mitad de la pantalla y los controles no entran bajo el lienzo.
 
 ---
 
@@ -131,11 +142,19 @@ Prohibido llamar a `sin()`/`cos()` en la ruta de simulación.
 ## 6. Modelos de datos (`core/Model.kt`)
 
 ```kotlin
-data class Building(
+// Sin `data`: un data class con un array compara por identidad, no por contenido,
+// y los tests §15.2 y §15.11 pasarían o fallarían por el motivo equivocado.
+class Building(
     val x: Int, val width: Int, val height: Int,
     val paletteIdx: Int,          // índice en la paleta de fachadas
     val windows: BooleanArray     // encendida/apagada, orden fila-mayor
-)
+) {
+    override fun equals(other: Any?): Boolean = other is Building &&
+        x == other.x && width == other.width && height == other.height &&
+        paletteIdx == other.paletteIdx && windows.contentEquals(other.windows)
+
+    override fun hashCode(): Int = /* incluye windows.contentHashCode() */ 0
+}
 
 class Terrain(
     val width: Int,
@@ -145,6 +164,7 @@ class Terrain(
 ) {
     fun solid(x: Int, y: Int): Boolean
     fun blast(cx: Int, cy: Int, r: Int)   // pone a false un círculo
+    fun fingerprint(): Long               // huella de mask+color; es lo que comparan los tests
 }
 
 data class Gorilla(val player: Int, val x: Int, val roofY: Int, var alive: Boolean = true)
@@ -157,20 +177,24 @@ data class Shot(val turn: Int, val angle: Int, val power: Int)  // angle 0..90, 
 sealed interface Outcome {
     data class HitGorilla(val player: Int) : Outcome
     data class HitTerrain(val x: Int, val y: Int) : Outcome
-    data object HitSun : Outcome
     data object OffScreen : Outcome
     data object TimeOut : Outcome
 }
 
 class ShotResult(
-    val path: FloatArray,    // pares x,y intercalados: path[2i], path[2i+1]
+    val path: FloatArray,    // pares x,y intercalados: path[2i], path[2i+1]; tamaño exacto steps*2
     val steps: Int,
     val outcome: Outcome,
-    val impactX: Int, val impactY: Int
+    val impactX: Int, val impactY: Int,
+    val sunHit: Boolean      // el sol cambió de expresión durante este vuelo
 )
 ```
 
-`path` se preasigna a `FloatArray(G.MAX_STEPS * 2)` y se reutiliza vía pool para no generar basura por turno.
+**No hay `Outcome.HitSun`.** §8 establece que el sol no detiene el proyectil, luego ese resultado sería inalcanzable. El impacto en el sol es un efecto visual y viaja en `sunHit`.
+
+**Propiedad de `path`.** El `ShotResult` que publica `MatchEngine` lleva un `FloatArray` **propio y recortado a `steps * 2`**. Nada de pool en esa ruta: la UI anima ese array durante ~2,6 s mientras la IA lanza cientos de simulaciones, y un buffer compartido se sobrescribiría a mitad de animación. Son ~2,4 KB por turno, una asignación cada varios segundos.
+
+La reutilización sí tiene sentido dentro de la IA, que simula en bucle cerrado y descarta cada trayectoria. Para eso existe la variante del §8 que escribe sobre un buffer prestado.
 
 ---
 
@@ -209,6 +233,17 @@ fun simulate(
     shot: Shot,
     wind: Int
 ): ShotResult
+
+// Variante para la IA: escribe la trayectoria en `scratch` (tamaño MAX_STEPS*2, propiedad
+// del llamador) y no asigna nada. El ShotResult devuelto apunta a `scratch`: solo es válido
+// hasta la siguiente llamada. NUNCA publicar este resultado en un MatchEvent.
+fun simulateInto(
+    scenario: Scenario,
+    shooter: Int,
+    shot: Shot,
+    wind: Int,
+    scratch: FloatArray
+): ShotResult
 ```
 
 Implementación:
@@ -234,7 +269,7 @@ repeat MAX_STEPS:
     si y > H                           -> OffScreen
     si y < 0                           -> continuar (el cielo está abierto por arriba)
 
-    si colisionaSol(x, y)              -> marcar sol sorprendido, NO termina el vuelo
+    si colisionaSol(x, y)              -> sunHit = true, NO termina el vuelo
     si colisionaGorilla(oponente)      -> HitGorilla(oponente)
     si colisionaGorilla(tirador)       -> HitGorilla(tirador)   // autogol, es legal
     si terrain.solid(x.toInt(), y.toInt()) -> HitTerrain(x, y)
@@ -247,7 +282,7 @@ Detalles no negociables:
 - **El plátano no colisiona con el sol en sentido físico.** El sol cambia de expresión y el proyectil sigue. Es un detalle del original.
 - **Colisión con gorila:** AABB de `GORILLA_W × GORILLA_H` centrado en `(g.x, g.roofY - GORILLA_H/2)`, expandido por `BANANA_R`.
 - **Autocolisión inicial:** el punto de partida está fuera del AABB propio por diseño (`HAND_DX = 10 > GORILLA_W/2 + BANANA_R = 11`)… **corrección: 10 < 11**. Subir `HAND_DX` a **12** o ignorar la colisión con el tirador durante los primeros 5 pasos. Elegir lo segundo, que es más robusto frente a ángulos altos.
-- **Sin tunelado:** a 220 px/s y `DT = 1/120`, el avance máximo por paso es 1,83 px. El objeto más fino es la ventana (3 px). Correcto.
+- **Anti-tunelado por muestreo de segmento.** El cálculo «220 px/s → 1,83 px por paso» solo vale para el primer paso: `vy` crece sin límite mientras dura el vuelo, y a los 5 s ya son 400 px/s (3,3 px/paso), con un techo de ~10 px/paso a los 15 s. Tras varios cráteres el terreno deja istmos de 1–3 px, que es exactamente lo que un muestreo puntual atraviesa. Por tanto, la comprobación contra el terreno recorre el segmento `(x₀,y₀) → (x₁,y₁)` con un DDA entero y evalúa `solid()` en **cada píxel del trayecto**; `impactX/impactY` es el **primer** píxel sólido del segmento, no el extremo del paso. Coste: una comprobación por paso en el caso habitual, ≤10 en el peor.
 - Tras `HitTerrain` o `HitGorilla`, el llamador aplica `terrain.blast(impactX, impactY, CRATER_R)`. La física **no** muta el terreno.
 
 ---
@@ -272,7 +307,9 @@ Algoritmo:
 2. **Refinado** (si `level.refine`): rejilla ±4 en ángulo y ±4 en potencia, paso 1, alrededor del mejor.
 3. **Ruido:** `angle += rng.nextGaussian() * sigmaAngle`, ídem potencia. Clamp a rangos válidos.
 
-Coste: ~272 × ~350 pasos ≈ 95 k iteraciones. Milisegundos. Aun así, ejecutar en `Dispatchers.Default` y mostrar un retardo artificial de 600–1200 ms para que el turno se lea bien.
+Coste: ~272 × ~350 pasos ≈ 95 k iteraciones (353 simulaciones si hay refinado). Milisegundos. Aun así, ejecutar en `Dispatchers.Default` y mostrar un retardo artificial de 600–1200 ms para que el turno se lea bien.
+
+`AiOpponent` posee **su propio** `FloatArray(G.MAX_STEPS * 2)` y llama a `simulateInto` (§8). Es el único punto del sistema donde se reutiliza el buffer de trayectoria, y ninguno de esos `ShotResult` sale de la clase.
 
 **No implementar** una solución analítica de balística. El viento y los edificios interpuestos la invalidan y no aporta nada que la búsqueda no dé.
 
@@ -314,12 +351,14 @@ sealed interface MatchEvent {
     data class TurnStart(val player: Int, val wind: Int, val turn: Int) : MatchEvent
     data class ShotFired(val shot: Shot, val result: ShotResult) : MatchEvent
     data class TerrainChanged(val cx: Int, val cy: Int, val r: Int) : MatchEvent
-    data class RoundEnd(val winner: Int, val scores: IntArray) : MatchEvent
+    class RoundEnd(val winner: Int, val scores: IntArray) : MatchEvent  // sin `data`: lleva array
     data class MatchEnd(val winner: Int) : MatchEvent
 }
 ```
 
 El bucle: `TurnStart` → `sources[current].nextShot(...)` → `simulate` → `ShotFired` → aplicar cráter → evaluar → cambiar turno. La UI se limita a consumir `events` y animar.
+
+`MatchEngine` usa `simulate` (array propio), nunca `simulateInto`: los eventos sobreviven al turno que los produjo. `scores` se copia al construir `RoundEnd`, para que el evento no exponga el array interno del motor.
 
 ---
 
@@ -395,7 +434,9 @@ Solicitar en runtime **solo al entrar en el modo Bluetooth**, nunca al arrancar.
 
 ```kotlin
 Canvas(Modifier.fillMaxSize()) {
-    val scale = (size.height / G.H).toInt().coerceAtLeast(1)
+    // La escala viene de core/Layout.kt (§3). El render NO la recalcula: si los dos
+    // cálculos divergen, el lienzo se sale de la pantalla o deja bandas muertas.
+    val scale = logicalScale(size.width.toInt(), size.height.toInt())
     // cielo, skyline, terreno, sol, gorilas, plátano, estela
     drawImage(
         image = terrainBitmap,

@@ -2,8 +2,8 @@
 
 Derivado de [`ESPEC_DESARROLLO.md`](ESPEC_DESARROLLO.md). La especificación es el **contrato**; este documento es el **plan de ejecución**: qué se construye, en qué orden, con qué criterio se da por terminado y qué hay que decidir antes de empezar.
 
-- **Versión del plan:** 1.0
-- **Base:** especificación §0–§18
+- **Versión del plan:** 1.1
+- **Base:** especificación §0–§18, con D-01…D-06 ya incorporadas
 - **Estimación total:** ~23 jornadas de desarrollo (1 persona, sin contar la entrega de Design ni pruebas de campo en M6)
 - **Hitos:** M0 → M7, secuenciales salvo lo indicado en §7 (paralelización)
 
@@ -24,9 +24,11 @@ Regla operativa: **ninguna tarea se cierra sin su test o su verificación manual
 
 ## 2. Decisiones previas — huecos y contradicciones de la especificación
 
-La especificación es sólida, pero contiene **once puntos que no se pueden implementar tal cual**. Cada uno lleva propuesta concreta. Los marcados 🔴 son bloqueantes del hito indicado; los 🟡 se pueden asumir con la propuesta por defecto y corregir en el documento.
+La especificación es sólida, pero contenía **once puntos que no se podían implementar tal cual**. Cada uno lleva propuesta concreta.
 
-### 🔴 D-01 — El pool de `path` es incompatible con `MatchEvent` (bloquea M1/M2)
+**Estado:** ✅ **D-01 a D-06 ya están aplicadas** a `ESPEC_DESARROLLO.md`; el texto se conserva aquí como registro de la decisión y su motivo. 🟡 D-07 a D-11 siguen pendientes y se consumen en M1 (D-07, D-08, D-09) y M5 (D-10, D-11).
+
+### ✅ D-01 — El pool de `path` es incompatible con `MatchEvent` — *aplicada en la especificación (§6, §8, §9, §11)*
 
 §6 dice que `ShotResult.path` se reutiliza vía pool; §11 lo publica en un `Flow` y §13 lo anima durante ~2,6 s. En modo IA, `chooseShot` ejecuta 272–353 simulaciones **mientras la UI aún está leyendo el path del turno anterior**: el buffer se machaca a mitad de animación.
 
@@ -36,19 +38,19 @@ La especificación es sólida, pero contiene **once puntos que no se pueden impl
 
 La optimización que la especificación pide es real, pero pertenece a la IA, no al motor.
 
-### 🔴 D-02 — `Outcome.HitSun` es inalcanzable (bloquea M1)
+### ✅ D-02 — `Outcome.HitSun` es inalcanzable — *aplicada (§6, §8)*
 
 §6 declara `HitSun` como resultado; §8 dice explícitamente que el sol **no** detiene el vuelo. Ambas cosas no pueden ser ciertas.
 
 **Propuesta:** eliminar `HitSun` de `Outcome` y añadir `val sunHit: Boolean` a `ShotResult`. El render usa el flag para la expresión del sol. El contrato del §6 se corrige.
 
-### 🔴 D-03 — Anti-tunelado: el cálculo del §8 solo cubre la velocidad inicial (bloquea M1)
+### ✅ D-03 — Anti-tunelado: el cálculo del §8 solo cubre la velocidad inicial — *aplicada (§8)*
 
 «220 px/s → 1,83 px por paso» solo vale para el primer paso. Un disparo alto acumula `vy` sin límite: a los 5 s de caída, `vy = 400 px/s` → **3,3 px/paso**; en el peor caso (15 s) supera los 9 px/paso. El muestreo puntual atraviesa istmos de terreno de 1–3 px entre cráteres, que es exactamente la geometría que produce el juego tras varios turnos.
 
 **Propuesta:** recorrer el segmento `(x₀,y₀) → (x₁,y₁)` con DDA entero y comprobar `solid()` en cada píxel del trayecto. Coste: ≤10 comprobaciones por paso en el peor caso, cero en el habitual. El `impactX/impactY` pasa a ser el primer píxel sólido del segmento, no el extremo.
 
-### 🔴 D-04 — `logicalWidth` puede devolver un lienzo más ancho que la pantalla (bloquea M2)
+### ✅ D-04 — `logicalWidth` puede devolver un lienzo más ancho que la pantalla — *aplicada (§3, §13)*
 
 `logicalWidth` fuerza el mínimo a `W_MIN = 320` tras dividir por una escala derivada **solo de la altura**. En un 1080×2400 en vertical: `scale = 2400/200 = 12`, `1080/12 = 90` → clamp a 320 → se dibujan `320 × 12 = 3840 px` sobre una pantalla de 1080. Recorte del 72 % del campo de juego.
 
@@ -64,7 +66,7 @@ fun logicalWidth(screenW: Int, screenH: Int): Int {
 
 La escala calculada por el render debe ser **la misma función**, no un cálculo paralelo dentro del `Canvas`. Extraer a `core` y usarla en los dos sitios.
 
-### 🟡 D-05 — La calibración del §2 no cuadra con su propia física
+### ✅ D-05 — La calibración del §2 no cuadra con su propia física — *aplicada (§2)*
 
 Con `POWER_TO_SPEED = 2.2`, potencia 68 → `v = 149,6 px/s`. Alcance a 45°: `v²/g = 149,6² / 80 = 279,8 px`. Tiempo: `2·v·sin45°/g = 2,65 s`.
 
@@ -72,7 +74,7 @@ El tiempo cuadra con el documento (~2,6 s); **el alcance no**: 280 px, no ~300 p
 
 **Propuesta:** mantener `GRAVITY = 80` (el tiempo de vuelo es lo que se percibe) y corregir el §2 a **«~280 px y ~2,65 s»**. La alternativa, `GRAVITY = 74,6`, acelera todo el juego un 7 % para cuadrar una cifra redonda escrita a ojo.
 
-### 🟡 D-06 — `data class` con arrays rompe `equals`/`hashCode`
+### ✅ D-06 — `data class` con arrays rompe `equals`/`hashCode` — *aplicada (§6, §11)*
 
 `Building(windows: BooleanArray)`, `ShotResult(path)` y `RoundEnd(scores: IntArray)` comparan arrays por identidad. Los tests 15.2 y 15.11 comparan escenarios y secuencias de eventos: pasarían o fallarían por motivos equivocados.
 
@@ -398,6 +400,7 @@ No entran en M0–M7 y no se empiezan «de paso»:
 
 ## 10. Próximo paso inmediato
 
-1. Resolver **D-01 a D-04** (bloqueantes) y confirmar las propuestas 🟡. Son decisiones de contrato: tocan `ESPEC_DESARROLLO.md`.
-2. Ejecutar **M0** (0,5 j) y dejar CI verde.
-3. Atacar **M1**, que es el hito donde se juega el proyecto: si el determinismo no está resuelto ahí, aparece como bug de red en M6 y cuesta diez veces más.
+1. ~~Resolver D-01 a D-06~~ — hecho: aplicadas a la especificación.
+2. ~~Ejecutar **M0** y dejar CI verde~~ — en curso.
+3. Confirmar **D-07, D-08 y D-09** antes de empezar `ScenarioGen` y `Rng`: las tres cambian el número o el orden de llamadas al RNG, así que tocarlas después de M1 invalida todas las semillas.
+4. Atacar **M1**, que es el hito donde se juega el proyecto: si el determinismo no está resuelto ahí, aparece como bug de red en M6 y cuesta diez veces más.
