@@ -1,0 +1,23 @@
+# Parte de la configuración por defecto de detekt (buildUponDefaultConfig = true).
+# Aquí solo van las desviaciones justificadas.
+build:
+  maxIssues: 0
+
+complexity:
+  LongParameterList:
+    # simulate(scenario, shooter, shot, wind, scratch) es la firma del contrato (§8).
+    functionThreshold: 6
+    constructorThreshold: 7
+
+naming:
+  FunctionNaming:
+    # Los @Composable van en PascalCase por convención de Compose.
+    ignoreAnnotated: ['Composable']
+
+style:
+  MagicNumber:
+    # Las constantes del juego viven en GameConstants.kt; en tests y render los
+    # literales geométricos son legibles tal cual.
+    excludes: ['**/test/**', '**/render/**']
+  MaxLineLength:
+    maxLineLength: 120

@@ -178,19 +178,37 @@ throwing-bambu/
 
 ## 5. Desglose por hitos
 
-### M0 — Esqueleto (0,5 j)
+### M0 — Esqueleto ✅ *completado*
 
 **Objetivo:** `./gradlew test` verde y CI ejecutándose.
 
-| ID | Tarea | Est. |
-|---|---|---|
-| T-01 | `settings.gradle.kts`, `libs.versions.toml`, wrapper Gradle 8.x, convention plugins en `build-logic` | 0,2 j |
-| T-02 | Módulos `core` (JVM), `transport` (android-lib), `app` (android-app) con `minSdk 24 / target 35 / compile 35`; grafo de dependencias del §1 | 0,15 j |
-| T-03 | Workflow `ci.yml`: JDK 17, cache de Gradle, `build test`; ktlint + detekt | 0,1 j |
-| T-04 | `README.md`, `LICENSE` propia y nota legal del §18 (nombre propio, sin assets de Microsoft) | 0,05 j |
+| ID | Tarea | Est. | Estado |
+|---|---|---|---|
+| T-01 | `settings.gradle.kts`, `libs.versions.toml`, wrapper Gradle 8.14.3 | 0,2 j | ✅ |
+| T-02 | Módulos `core` (JVM), `transport` (android-lib), `app` (android-app) con `minSdk 24 / target 35 / compile 35`; grafo de dependencias del §1 | 0,15 j | ✅ |
+| T-03 | Workflow `ci.yml`: JDK 17, cache de Gradle, `build test`; ktlint + detekt | 0,1 j | ✅ |
+| T-04 | `README.md`, `LICENSE` propia y nota legal del §18 (nombre propio, sin assets de Microsoft) | 0,05 j | ✅ |
+
+**Dos desviaciones respecto al plan original, ambas deliberadas:**
+
+- **Sin `build-logic`.** Con tres módulos, un included build de convention plugins cuesta más configuración y tiempo de compilación del que ahorra: la configuración compartida entre `transport` y `app` son ~15 líneas. Se reconsidera si el proyecto pasa de cinco módulos.
+- **Añadido `-PcoreOnly`.** Excluye los módulos Android del build. No es un apaño: hace efectiva la promesa del §0.1 —`:core` es testeable sin Android— y permite trabajar el núcleo en una máquina o un contenedor sin SDK.
+
+**Añadido no previsto:** el workflow incluye un segundo job que ejecuta `:core:test` en **macOS**. El §17.1 avisa de divergencias de coma flotante entre implementaciones de JVM; desde M1 esto las detecta en el commit que las introduce, no en M6 como bug de red.
 
 **DoD:** CI verde en la rama. `app` instala y arranca en una pantalla vacía.
-**Decisiones consumidas:** ninguna.
+
+**Verificación realizada** (el contenedor de desarrollo no alcanza `dl.google.com` ni `maven.google.com`, bloqueados por la política de red, así que no puede resolver AGP ni AndroidX):
+
+| Elemento | Cómo se verificó |
+|---|---|
+| Tests de `:core` | ✅ Ejecutados (build equivalente Kotlin JVM + JUnit): 2/2 en verde |
+| ktlint sobre `.kt` y `.kts` | ✅ Limpio (ktlint-cli 1.5.0 sobre todo el repositorio) |
+| detekt | ✅ Limpio, con la configuración de `config/detekt/detekt.yml` |
+| Build de `:transport` y `:app` | ⏳ **Pendiente del primer CI**: requiere SDK de Android y acceso a Google Maven |
+| `app` arranca en pantalla vacía | ⏳ Pendiente de dispositivo o emulador |
+
+**Decisiones consumidas:** D-04 (orientación landscape fijada en el manifiesto).
 
 ---
 
