@@ -89,19 +89,27 @@ fun BambuApp(navController: NavHostController = rememberNavController()) {
     }
 }
 
+/** The level slot carries this when there is no AI: two people at the same device. */
+const val NO_LEVEL = "NONE"
+
 object Routes {
     const val MENU = "menu"
-    const val SETUP = "setup"
     const val ARG_SEED = "seed"
     const val ARG_ROUNDS = "rounds"
     const val ARG_WINNER = "winner"
-    const val GAME = "game/{$ARG_SEED}/{$ARG_ROUNDS}"
+    const val ARG_LEVEL = "level"
+    const val ARG_SOLO = "solo"
+    const val SETUP = "setup/{$ARG_SOLO}"
+    const val GAME = "game/{$ARG_SEED}/{$ARG_ROUNDS}/{$ARG_LEVEL}"
     const val RESULT = "result/{$ARG_WINNER}"
+
+    fun setup(solo: Boolean) = "setup/$solo"
 
     fun game(
         seed: Long,
         rounds: Int,
-    ) = "game/$seed/$rounds"
+        level: AiLevel?,
+    ) = "game/$seed/$rounds/${level?.name ?: NO_LEVEL}"
 
     fun result(winner: Int) = "result/$winner"
 }
