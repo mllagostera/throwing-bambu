@@ -196,7 +196,7 @@ throwing-bambu/
 |---|---|---|---|
 | T-01 | `settings.gradle.kts`, `libs.versions.toml`, wrapper Gradle 8.14.3 | 0,2 j | ✅ |
 | T-02 | Módulos `core` (JVM), `transport` (android-lib), `app` (android-app) con `minSdk 24 / target 35 / compile 35`; grafo de dependencias del §1 | 0,15 j | ✅ |
-| T-03 | Workflow `ci.yml`: JDK 17, cache de Gradle, `build test`; ktlint + detekt | 0,1 j | ✅ |
+| T-03 | Workflow `ci.yml`: JDK 17, cache de Gradle, `build test`; ktlint + detekt; APK de depuración publicado como artefacto | 0,15 j | ✅ |
 | T-04 | `README.md`, `LICENSE` propia y nota legal del §18 (nombre propio, sin assets de Microsoft) | 0,05 j | ✅ |
 
 **Dos desviaciones respecto al plan original, ambas deliberadas:**
@@ -204,7 +204,10 @@ throwing-bambu/
 - **Sin `build-logic`.** Con tres módulos, un included build de convention plugins cuesta más configuración y tiempo de compilación del que ahorra: la configuración compartida entre `transport` y `app` son ~15 líneas. Se reconsidera si el proyecto pasa de cinco módulos.
 - **Añadido `-PcoreOnly`.** Excluye los módulos Android del build. No es un apaño: hace efectiva la promesa del §0.1 —`:core` es testeable sin Android— y permite trabajar el núcleo en una máquina o un contenedor sin SDK.
 
-**Añadido no previsto:** el workflow incluye un segundo job que ejecuta `:core:test` en **macOS**. El §17.1 avisa de divergencias de coma flotante entre implementaciones de JVM; desde M1 esto las detecta en el commit que las introduce, no en M6 como bug de red.
+**Añadidos no previstos:**
+
+- Cada ejecución publica el **APK de depuración** como artefacto (`apk-debug`, 14 días), generado después de los tests: si el build está en rojo, no hay APK. El de release espera a M7, donde entran keystore y R8 (T-52).
+- El workflow incluye un segundo job que ejecuta `:core:test` en **macOS**. El §17.1 avisa de divergencias de coma flotante entre implementaciones de JVM; desde M1 esto las detecta en el commit que las introduce, no en M6 como bug de red.
 
 **DoD:** CI verde en la rama. `app` instala y arranca en una pantalla vacía.
 
