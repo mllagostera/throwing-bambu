@@ -11,7 +11,7 @@ class TerrainTest {
     fun blastClearsExactlyTheCircle() {
         val w = G.W_MIN
         val mask = BooleanArray(w * G.H) { true }
-        val terrain = Terrain(w, mask, ByteArray(w * G.H) { Palette.IDX_FACADE_FIRST }, emptyList())
+        val terrain = Terrain(w, mask, ByteArray(w * G.H) { Palette.FACADES[0].base }, emptyList())
 
         val cx = 100
         val cy = 100
@@ -28,7 +28,7 @@ class TerrainTest {
                     !inside,
                     terrain.solid(x, y),
                 )
-                if (inside) assertEquals(Palette.IDX_EMPTY, terrain.color[y * w + x])
+                if (inside) assertEquals(Palette.EMPTY, terrain.color[y * w + x])
             }
         }
     }

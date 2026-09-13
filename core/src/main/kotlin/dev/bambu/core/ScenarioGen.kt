@@ -130,21 +130,22 @@ private fun paint(
     val color = ByteArray(width * G.H)
 
     for (b in buildings) {
-        val facade = Palette.facadeIndex(b.paletteIdx)
+        val facade = Palette.FACADES[b.paletteIdx]
         for (y in b.roofY until G.H) {
             val row = y * width
             for (x in b.x until minOf(b.x + b.width, width)) {
                 mask[row + x] = true
-                color[row + x] = facade
+                color[row + x] = facade.base
             }
         }
-        paintWindows(b, width, color)
+        paintWindows(b, facade, width, color)
     }
     return Terrain(width, mask, color, buildings)
 }
 
 private fun paintWindows(
     b: Building,
+    facade: Palette.Facade,
     width: Int,
     color: ByteArray,
 ) {
@@ -155,7 +156,7 @@ private fun paintWindows(
         for (c in 0 until b.windowCols) {
             val left = b.x + WIN_MARGIN + c * (WIN_W + WIN_GAP)
             val on = b.windows[r * b.windowCols + c]
-            fillWindow(color, width, left, top, if (on) Palette.IDX_WINDOW_ON else Palette.IDX_WINDOW_OFF)
+            fillWindow(color, width, left, top, if (on) facade.lit else facade.unlit)
         }
     }
 }

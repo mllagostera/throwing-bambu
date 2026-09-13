@@ -1,0 +1,3 @@
+# Sky gradient. The engine interpolates it in code.
+top=#0000AA
+bottom=#5555FF

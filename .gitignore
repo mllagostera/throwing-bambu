@@ -39,5 +39,9 @@ captures/
 *.iml
 .DS_Store
 
-# El wrapper SÍ se versiona: es lo que garantiza la misma versión de Gradle en CI.
+# The wrapper IS versioned: it is what pins the same Gradle version in CI.
 !gradle/wrapper/gradle-wrapper.jar
+
+# Python
+__pycache__/
+*.py[cod]

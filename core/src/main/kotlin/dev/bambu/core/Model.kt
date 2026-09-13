@@ -50,7 +50,7 @@ class Terrain(
     val width: Int,
     /** `width * G.H`, `true` = sólido. */
     val mask: BooleanArray,
-    /** `width * G.H`, índice en [Palette.ARGB]. */
+    /** `width * G.H`, índice EGA por píxel; [Palette.EMPTY] donde no hay terreno. */
     val color: ByteArray,
     val buildings: List<Building>,
 ) {
@@ -76,7 +76,7 @@ class Terrain(
                 if (dx * dx + dy * dy <= r2) {
                     val i = y * width + x
                     mask[i] = false
-                    color[i] = Palette.IDX_EMPTY
+                    color[i] = Palette.EMPTY
                 }
             }
         }
