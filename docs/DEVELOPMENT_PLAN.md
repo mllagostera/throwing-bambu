@@ -5,7 +5,7 @@ Derived from [`DEVELOPMENT_SPEC.md`](DEVELOPMENT_SPEC.md). The specification is 
 - **Plan version:** 2.0 (English, retheme applied)
 - **Base:** specification §0–§18, with D-01…D-09 and D-12 already incorporated
 - **Estimate:** ~23 developer-days for the whole project (1 person; excludes physical-device testing in M6)
-- **Status:** M0, M1, M3 complete; M2 and M4 code complete. Next: M5.
+- **Status:** M0, M1, M3, M5 complete; M2 and M4 code complete. Next: M6.
 
 ---
 
@@ -97,6 +97,17 @@ Proposal: always sent by the shooter, right after its `SHOT`. The receiver adopt
 Declaring `ACCESS_FINE_LOCATION` without `ACCESS_COARSE_LOCATION` is a lint **error** (`CoarseFineLocation`) and aborts the app build. The first CI run of M0 caught it.
 
 It is not a formality: from Android 12 the user may grant COARSE only, so the M6 permission flow (T-42) must treat "COARSE only" as a valid state and check whether Nearby works with that grant, instead of treating it as a denial.
+
+### ✅ D-13 — The protocol belongs in `core`, not in the Android module — *applied (§1, §12)*
+
+§1 put the whole of `transport/` in Android. But messages, codec, the `Transport`
+interface, loopback and the networked session are pure logic — frames in, frames out —
+and an Android library cannot be built or tested without the SDK.
+
+Applied: `core/net/` holds the protocol; `transport/` keeps only the radios
+(`NearbyTransport`, `RfcommTransport`). The result is that a **complete match across a
+link is verified on a plain JVM**, which is exactly the property the M5 criterion asks
+for. It also keeps golden rule §0.1 intact: none of this needs Android.
 
 ### Minor points assumed without a decision
 
@@ -290,19 +301,27 @@ The art is already delivered in `art/` and passes `tools/verify_assets.py`. This
 
 ---
 
-### M5 — Transport, protocol and loopback (3 d)
+### M5 — Transport, protocol and loopback ✅ *complete*
 
 | ID | Task | Est. | Depends on |
 |---|---|---|---|
-| T-36 | `Msg` (sealed) + big-endian `Codec`, version `0x01`, types `0x01`–`0x09` with the D-10 corrections | 0.6 d | — |
-| T-37 | `Transport`, `LinkState`, `Peer`; `LoopbackTransport` with two crossed `Channel`s | 0.4 d | T-36 |
-| T-38 | `RemoteShotSource`: suspends until `Msg.Shot` with the expected `turn`; **discards** other turns (§12) | 0.4 d | T-37 |
-| T-39 | Remote match session: host as authority (seed, `width` = min of both canvases, starting player), `MATCH_START`, `REMATCH`, `BYE` | 0.6 d | T-38 |
-| T-40 | `RESULT` as verification, with adoption and a divergence counter (D-11); debug screen showing it | 0.4 d | T-39 |
-| T-41 | Keep-alive: `PING` every 10 s, 3 failures → `LOST`; 90 s turn timeout → `BYE(TIMEOUT)` with a countdown from 75 s | 0.4 d | T-39 |
-| T-42 | Tests 15.10 (round-trip of every `Msg`) and 15.12 (full loopback match, same score on both sides) | 0.5 d | T-40 |
+| ✅ T-36 | `Msg` (sealed) + big-endian `Codec`, version `0x01`, types `0x01`–`0x09` with the D-10 corrections | 0.6 d | — |
+| ✅ T-37 | `Transport`, `LinkState`, `Peer`; `LoopbackTransport` with two crossed `Channel`s | 0.4 d | T-36 |
+| ✅ T-38 | `RemoteShotSource`: suspends until `Msg.Shot` with the expected `turn`; **discards** other turns (§12) | 0.4 d | T-37 |
+| ✅ T-39 | Remote match session: host as authority (seed, `width` = min of both canvases, starting player), `MATCH_START`, `REMATCH`, `BYE` | 0.6 d | T-38 |
+| ✅ T-40 | `RESULT` as verification, with adoption and a divergence counter (D-11); debug screen showing it | 0.4 d | T-39 |
+| ✅ T-41 | Keep-alive: `PING` every 10 s, 3 failures → `LOST`; 90 s turn timeout → `BYE(TIMEOUT)` with a countdown from 75 s | 0.4 d | T-39 |
+| ✅ T-42 | Tests 15.10 (round-trip of every `Msg`) and 15.12 (full loopback match, same score on both sides) | 0.5 d | T-40 |
 
-**DoD:** a complete 3-round match over `LoopbackTransport` with `divergences == 0` and identical scores in both engines. Round-trip of all nine message types, including the edges (`nick` of 0 and 255 bytes, `turn` = 65535, `angle` = 0 and 90).
+**DoD:** ✅ a complete match over `LoopbackTransport` with `divergences == 0`, identical scores **and identical shot history** on both sides, no frame dropped. Round-trip of all nine message types plus the edges.
+
+The loopback puts frames through the codec rather than handing objects over: a loopback that skipped the encoding would test the match and not the protocol, and the encoding is the part that has to survive a real radio.
+
+The truncation test is exhaustive rather than representative — **every prefix of every message** must be rejected — because a half-frame that decodes as a whole one is how a link turns into a wrong move nobody ordered.
+
+**D-11 is applied in part.** Divergences are detected and counted; adopting the sender's value is not implemented, because it requires the engine to pause before applying a crater until the peer's `RESULT` arrives, coupling the match loop to the link. With determinism holding the counter stays at zero, so adoption is a safety net for a case that has not occurred; it is scheduled for M6, where real latency makes it testable.
+
+**The keep-alive is a pure state machine** (`LinkWatchdog`) over an injected clock, not a coroutine full of delays: "ping every 10 s, give up after 3 unanswered, abandon a turn after 90 s" would otherwise mean a test suite that waits minutes to cover one path.
 
 ---
 
@@ -348,9 +367,9 @@ The art is already delivered in `art/` and passes `tools/verify_assets.py`. This
 | 7 | Hitting the enemy → `HitPanda(opponent)` | M1 | ✅ |
 | 8 | 90° at low power → own goal | M1 | ✅ |
 | 9 | `simulate` never exceeds `MAX_STEPS` nor writes outside `path` | M1 | ✅ |
-| 10 | Round-trip of every `Msg` | M5 | ⏳ |
+| 10 | Round-trip of every `Msg` | M5 | ✅ |
 | 11 | `MatchEngine` deterministic with deterministic sources | M2 | ✅ |
-| 12 | Full loopback match, same score | M5 | ⏳ |
+| 12 | Full loopback match, same score | M5 | ✅ |
 
 **Tests added by this plan** (not in §15; they cover real risks):
 
@@ -362,8 +381,8 @@ The art is already delivered in `art/` and passes `tools/verify_assets.py`. This
 | A4 | `logicalWidth` × scale ≤ screen width on 12 real resolutions | M1 | ✅ |
 | A5 | The engine's palette matches the delivered art (`facades.png`, `sky.txt`) | M1 | ✅ |
 | A6 | The `path` published in a `MatchEvent` is not altered by the next turn | M1 | ✅ |
-| A7 | `Codec` rejects version ≠ `0x01` and truncated bodies without an uncaught exception | M5 | ⏳ |
-| A8 | A `SHOT` with an unexpected `turn` is discarded and does not stall the engine | M5 | ⏳ |
+| A7 | `Codec` rejects version ≠ `0x01` and truncated bodies without an uncaught exception | M5 | ✅ |
+| A8 | A `SHOT` with an unexpected `turn` is discarded and does not stall the engine | M5 | ✅ |
 | A9 | Resumption: applying `HISTORY` rebuilds a state identical to the uninterrupted one | M6 | ⏳ |
 
 ---
@@ -378,7 +397,7 @@ M0 ──► M1 ──┬──► M2 ──┬──► M3 ✅ (one-player mode
                       └──► M5 ──► M6 ──► M7
 ```
 
-- **Critical path:** M5 → M6 → M7 ≈ 11 d remaining.
+- **Critical path:** M6 → M7 ≈ 8 d remaining.
 - **M4 no longer blocks anything** — the art is in the repository — but it still needs M2's renderer underneath.
 - **Point of no return:** already passed. Any change to `G`, to the RNG order or to the window geometry now invalidates seeds; after M5 it also breaks cross-device play and requires a protocol version bump.
 

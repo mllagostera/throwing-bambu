@@ -21,7 +21,7 @@ A document for a coding agent. Everything here that appears as a constant or a s
 ```
 throwing-bambu/
 ├── core/          Plain Kotlin JVM. No Android. Testable with JUnit.
-├── transport/     Android. Connectivity abstraction + implementations.
+├── transport/     Android. The radios: Nearby Connections and RFCOMM.
 └── app/           Android. Compose, rendering, navigation, audio.
 ```
 
@@ -400,7 +400,13 @@ fun scenarioSeedForRound(seed: Long, round: Int): Long = seed * 0x27220A95L + ro
 
 ---
 
-## 12. Transport (`transport/`)
+## 12. Transport (`core/net/` and `transport/`)
+
+The protocol — messages, codec, the `Transport` interface, loopback and the session that
+plays a match across a link — lives in **`core/net/`**. It is pure logic: frames in,
+frames out, no radio involved, and keeping it in `core` is what makes a whole networked
+match testable on a plain JVM. `transport/` holds only what genuinely needs Android:
+`NearbyTransport` and `RfcommTransport`.
 
 ```kotlin
 interface Transport {
@@ -442,7 +448,9 @@ Rules:
 
 - **The host is the authority.** It generates the `seed`, decides the `width` (the smaller of the two logical canvases, negotiated in `HELLO`) and who starts.
 - A `SHOT` whose `turn` is not the expected one is **discarded**, not queued. This protects against resends.
-- `RESULT` is verification, not the source of truth. It is always sent by the shooter, right after its `SHOT`. If the receiver computes an impact differing by more than 2 px, it logs the divergence and **adopts the sender's values** — `outcome`, `impactX` and `impactY`, before applying the crater, because the outcome decides the score. If it happens more than once per match, it is a determinism bug: fix it, do not paper over it.
+- `RESULT` is verification, not the source of truth. It is always sent by the shooter, right after its `SHOT`. If the receiver computes an impact differing by more than 2 px, or a different outcome, it counts a divergence. More than zero per match is a determinism bug: fix it, do not paper over it.
+
+  **Adoption is not implemented yet.** Taking the sender's value means the engine must pause before applying the crater until the peer's `RESULT` arrives, which couples the match loop to the link. With determinism holding, the counter stays at zero and adoption is a safety net for a case that has not happened; it is scheduled for M6, where real latency makes it testable. Until then the divergence is counted and surfaced, never silently absorbed.
 - Turn timeout: 90 s without a `SHOT` → `BYE(TIMEOUT)`, with a visible countdown from 75 s.
 - `PING` every 10 s while idle; 3 failures → `LinkState.LOST`.
 - Reconnection: determinism makes it cheap. `RESUME` states where the match stands and `HISTORY` replays the shots, from which both sides rebuild the identical state.

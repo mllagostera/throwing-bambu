@@ -25,6 +25,9 @@ naming:
     ignoreAnnotated: ['Composable']
 
 style:
+  ReturnCount:
+    # `if (!reader.has(n)) return null` is a guard clause, not a second exit path.
+    excludeGuardClauses: true
   MagicNumber:
     # Game constants live in GameConstants.kt; in tests and in the renderer the
     # geometric literals read fine as they are. In Rng.kt and Trig.kt the numbers *are*

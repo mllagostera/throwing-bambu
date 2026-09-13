@@ -1,5 +1,7 @@
 package dev.bambu.core
 
+import dev.bambu.core.net.Msg
+import dev.bambu.core.net.Transport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -99,3 +101,57 @@ class AiShotSource(
  * without touching the RNG the shots come from, which keeps a match reproducible.
  */
 fun defaultThinkingDelay(turn: Int): Long = THINK_MIN_MS + (turn * THINK_STRIDE) % THINK_SPREAD_MS
+
+/**
+ * The other device's player.
+ *
+ * It does not read the link itself: the match session pumps the transport and hands
+ * shots over with [deliver]. One consumer for the link, one place that knows the
+ * protocol.
+ *
+ * A shot whose turn is not the one being waited for is **discarded, not queued** (§12).
+ * Queueing it would let a resend surface a turn later and play a shot nobody aimed.
+ */
+class RemoteShotSource : ShotSource {
+    private val shots = Channel<Shot>(Channel.BUFFERED)
+
+    /** Number of shots dropped for arriving with an unexpected turn. */
+    var discarded: Int = 0
+        private set
+
+    suspend fun deliver(shot: Shot) = shots.send(shot)
+
+    override suspend fun nextShot(
+        scenario: Scenario,
+        me: Int,
+        wind: Int,
+        turn: Int,
+    ): Shot {
+        while (true) {
+            val shot = shots.receive()
+            if (shot.turn == turn) return shot
+            discarded++
+        }
+    }
+}
+
+/**
+ * Wraps a local source so every shot it produces is also sent to the other device.
+ *
+ * The engine stays unaware that a link exists: it asks for a shot and gets one (§10).
+ */
+class SendingShotSource(
+    private val local: ShotSource,
+    private val transport: Transport,
+) : ShotSource {
+    override suspend fun nextShot(
+        scenario: Scenario,
+        me: Int,
+        wind: Int,
+        turn: Int,
+    ): Shot {
+        val shot = local.nextShot(scenario, me, wind, turn)
+        transport.send(Msg.ShotMsg(shot.turn, shot.angle, shot.power))
+        return shot
+    }
+}
