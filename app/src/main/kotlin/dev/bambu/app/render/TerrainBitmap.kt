@@ -8,15 +8,13 @@ import dev.bambu.core.Palette
 import dev.bambu.core.Terrain
 
 /**
- * The terrain as an ARGB bitmap, sky included (§13).
+ * The terrain as an ARGB bitmap (§13).
  *
- * The sky lives in this buffer rather than in a `Brush` behind the canvas so the
- * gradient is quantised to whole logical rows: one colour per row, no smooth blend that
- * would break the pixel look. It also leaves the canvas with a single `drawImage`.
+ * Everything that is not solid is left **transparent**, not sky-coloured: the skyline
+ * band is drawn behind the buildings, so the terrain layer has to let it through.
  *
- * The bitmap is rebuilt **only** when a crater is applied, and even then only the
- * affected rectangle is rewritten. Regenerating it per frame is what sinks performance
- * on low-end devices (§17.5).
+ * The bitmap is patched when a crater is applied and never rebuilt per frame, which is
+ * the difference between 60 fps and a slideshow on a low-end device (§17.5).
  */
 class TerrainBitmap(
     private val terrain: Terrain,
@@ -32,19 +30,15 @@ class TerrainBitmap(
     val image: ImageBitmap get() = bitmap.asImageBitmap()
 
     init {
-        for (y in 0 until G.H) {
-            val sky = skyColor(y)
-            val row = y * width
-            for (x in 0 until width) {
-                pixels[row + x] = pixelAt(row + x, sky)
-            }
+        for (i in pixels.indices) {
+            pixels[i] = pixelAt(i)
         }
         bitmap.setPixels(pixels, 0, width, 0, 0, width, G.H)
     }
 
     /**
      * Repaints the rectangle a crater touched. The engine has already cleared the mask,
-     * so this only has to read it back.
+     * so this only reads it back.
      */
     fun patch(
         cx: Int,
@@ -60,25 +54,35 @@ class TerrainBitmap(
         if (w <= 0 || h <= 0) return
 
         for (y in top..bottom) {
-            val sky = skyColor(y)
             val row = y * width
             for (x in left..right) {
-                pixels[row + x] = pixelAt(row + x, sky)
+                pixels[row + x] = pixelAt(row + x)
             }
         }
         bitmap.setPixels(pixels, top * width + left, width, left, top, w, h)
         version++
     }
 
-    private fun pixelAt(
-        index: Int,
-        sky: Int,
-    ): Int = if (terrain.mask[index]) Palette.argb(terrain.color[index]) else sky
+    private fun pixelAt(index: Int): Int = if (terrain.mask[index]) Palette.argb(terrain.color[index]) else TRANSPARENT
 
-    /** One colour per logical row, interpolated between the two colours of `sky.txt`. */
-    private fun skyColor(y: Int): Int {
-        val t = y.toFloat() / (G.H - 1)
-        return lerpArgb(Palette.SKY_TOP, Palette.SKY_BOTTOM, t)
+    private companion object {
+        const val TRANSPARENT = 0
+    }
+}
+
+/**
+ * The sky as a one-pixel-wide column, stretched across the canvas with nearest-neighbour.
+ *
+ * One colour per logical row, interpolated between the two colours of `art/sky.txt`.
+ * Building it as a bitmap rather than a `Brush` keeps the gradient quantised to whole
+ * rows — a smooth blend would be the one soft edge in an otherwise hard-pixel screen.
+ */
+object SkyGradient {
+    val image: ImageBitmap by lazy {
+        val pixels = IntArray(G.H) { y -> lerpArgb(Palette.SKY_TOP, Palette.SKY_BOTTOM, y.toFloat() / (G.H - 1)) }
+        val bitmap = Bitmap.createBitmap(1, G.H, Bitmap.Config.ARGB_8888)
+        bitmap.setPixels(pixels, 0, 1, 0, 0, 1, G.H)
+        bitmap.asImageBitmap()
     }
 
     private fun lerpArgb(

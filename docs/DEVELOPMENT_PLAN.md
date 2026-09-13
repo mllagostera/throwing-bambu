@@ -5,7 +5,7 @@ Derived from [`DEVELOPMENT_SPEC.md`](DEVELOPMENT_SPEC.md). The specification is 
 - **Plan version:** 2.0 (English, retheme applied)
 - **Base:** specification §0–§18, with D-01…D-09 and D-12 already incorporated
 - **Estimate:** ~23 developer-days for the whole project (1 person; excludes physical-device testing in M6)
-- **Status:** M0 and M1 complete; M2 code complete. Next: M3 or M5.
+- **Status:** M0, M1 complete; M2 and M4 code complete. Next: M3 or M5.
 
 ---
 
@@ -255,22 +255,28 @@ The drift in range and time is the error of the explicit Euler integrator, insid
 
 ---
 
-### M4 — Sprites and visual finish (3 d)
+### M4 — Sprites and visual finish — *code complete, pending on-device validation*
 
 The art is already delivered in `art/` and passes `tools/verify_assets.py`. This milestone is integration, not production.
 
 | ID | Task | Est. |
 |---|---|---|
-| T-28 | Copy the sprites to `app/src/main/assets/sprites/` and load them with `inScaled = false`, painting with filtering off | 0.4 d |
-| T-29 | Panda: 6 frames (idle, arm_left, arm_right, chest_1, chest_2, defeated), 24×24 cell, pivot (12,24) | 0.5 d |
-| T-30 | Cane in flight: 4 frames at 80 ms, 8×8 cell; trail behind it | 0.4 d |
-| T-31 | Explosion `boom.png`: 8 frames × ~40 ms, crater applied on **frame 3** | 0.4 d |
-| T-32 | Sun with two expressions driven by `sunHit` (D-02), 1 s of `ouch` | 0.3 d |
-| T-33 | `skyline.png` as a background band, cropped from the right, and the two-colour sky gradient | 0.4 d |
-| T-34 | Alignment pass: feet exactly on `roofY`, explosion centred on the crater, the half-pixel pivot question, no fractional scaling | 0.4 d |
-| T-35 | Profiler check on a low-end device (§17.5): no memory growth per turn, stable 60 fps | 0.4 d |
+| ✅ T-28 | Copy the sprites to `app/src/main/assets/sprites/` and load them with `inScaled = false`, painting with filtering off | 0.4 d |
+| ✅ T-29 | Panda: 6 frames (idle, arm_left, arm_right, chest_1, chest_2, defeated), 24×24 cell, pivot (12,24) | 0.5 d |
+| ✅ T-30 | Cane in flight: 4 frames at 80 ms, 8×8 cell; trail behind it | 0.4 d |
+| ✅ T-31 | Explosion `boom.png`: 8 frames × ~40 ms, crater applied on **frame 3** | 0.4 d |
+| ✅ T-32 | Sun with two expressions driven by `sunHit` (D-02), 1 s of `ouch` | 0.3 d |
+| ✅ T-33 | `skyline.png` as a background band, cropped from the right, and the two-colour sky gradient | 0.4 d |
+| ⏳ T-34 | Alignment pass: feet exactly on `roofY`, explosion centred on the crater, the half-pixel pivot question, no fractional scaling | 0.4 d |
+| ⏳ T-35 | Profiler check on a low-end device (§17.5): no memory growth per turn, stable 60 fps | 0.4 d |
 
-**DoD:** no visual mismatch, verified with screenshots compared at 1× and at the device's maximum scale. Clean Profiler.
+**DoD:** ⏳ no visual mismatch, verified with screenshots at 1× and at the device's maximum scale, plus a clean Profiler run. Both need a device.
+
+**How the art is packaged.** The PNGs are build output of `tools/gen_sprites.py`, so a `Sync` task copies them from `art/sprites` into generated assets at build time instead of a second copy living in the repository. Regenerate the art and the APK picks it up; no file drifts.
+
+**The crater lands on explosion frame 3.** The engine emits `TerrainChanged` right after `ShotFired`, so the view model plays frames 0–2 when the flight ends, lets the crater apply, and plays 3–7 afterwards. That is what puts the hole in the ground on the frame the art was drawn for, instead of before the blast is visible.
+
+**The terrain layer is now transparent** where there is no building, and the sky is a 1×200 bitmap stretched with nearest-neighbour. The skyline band needed to sit *behind* the buildings, which the previous sky-in-the-terrain-bitmap approach made impossible.
 
 ---
 

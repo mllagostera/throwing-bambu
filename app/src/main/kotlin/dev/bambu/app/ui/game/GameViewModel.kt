@@ -1,23 +1,24 @@
 package dev.bambu.app.ui.game
 
-import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.bambu.app.render.PandaFrame
 import dev.bambu.app.render.TerrainBitmap
 import dev.bambu.core.HumanShotSource
 import dev.bambu.core.MatchEngine
 import dev.bambu.core.MatchEvent
+import dev.bambu.core.Outcome
 import dev.bambu.core.Shot
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** How many trajectory points are consumed per frame at 1× (§13). */
-private const val POINTS_PER_FRAME = 2
+/** The crater opens on frame 3 of the explosion (§13). */
+private const val BOOM_CRATER_FRAME = 3
+private const val BOOM_LAST_FRAME = 7
 
 /**
  * Drives one match and turns its events into something the UI can draw.
@@ -31,10 +32,15 @@ class GameViewModel : ViewModel() {
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
     private val sources = listOf(HumanShotSource(), HumanShotSource())
+    private val animator = MatchAnimator(_uiState, viewModelScope)
     private var engine: MatchEngine? = null
     private var job: Job? = null
 
-    var speedMultiplier: Int = 1
+    var speedMultiplier: Int
+        get() = animator.speedMultiplier
+        set(value) {
+            animator.speedMultiplier = value
+        }
 
     /** Starts the match. Calling it twice is a no-op: the running match wins. */
     fun start(
@@ -45,10 +51,7 @@ class GameViewModel : ViewModel() {
         if (engine != null) return
         val created = MatchEngine(seed, width, sources, roundsToWin)
         engine = created
-        job =
-            viewModelScope.launch {
-                created.events.collect { handle(it) }
-            }
+        job = viewModelScope.launch { created.events.collect { handle(it) } }
         viewModelScope.launch { created.run() }
     }
 
@@ -86,7 +89,9 @@ class GameViewModel : ViewModel() {
                 wind = event.wind,
                 canePoint = null,
                 trail = emptyList(),
-                sunHit = false,
+                boom = null,
+                sunOuch = false,
+                pandaPoses = emptyMap(),
                 roundWinner = null,
             )
         }
@@ -103,21 +108,43 @@ class GameViewModel : ViewModel() {
             )
         }
 
+    /**
+     * Animates the throw and then the first frames of the explosion.
+     *
+     * The split is not arbitrary: the crater opens on frame 3 (§13), and the engine
+     * emits `TerrainChanged` right after this event. Playing frames 0–2 here and the
+     * rest in [onTerrainChanged] is what puts the hole in the ground on the exact frame
+     * the art was drawn for.
+     */
     private suspend fun onShotFired(event: MatchEvent.ShotFired) {
         _uiState.update {
             it.copy(
                 phase = GamePhase.THROWING,
                 lastShots = it.lastShots + (event.player to event.shot),
+                pandaPoses = it.pandaPoses + (event.player to PandaFrame.throwing(event.player)),
             )
         }
-        animate(event)
+        animator.flight(event)
+        _uiState.update {
+            it.copy(
+                canePoint = null,
+                trail = emptyList(),
+                pandaPoses = it.pandaPoses + (event.player to PandaFrame.IDLE),
+            )
+        }
+        if (leavesACrater(event)) {
+            animator.boom(event.result.impactX, event.result.impactY, 0, BOOM_CRATER_FRAME - 1)
+        }
     }
 
-    private fun onTerrainChanged(event: MatchEvent.TerrainChanged) =
+    private suspend fun onTerrainChanged(event: MatchEvent.TerrainChanged) {
         _uiState.update { state ->
             state.terrain?.patch(event.cx, event.cy, event.r)
             state.copy(terrainVersion = state.terrain?.version ?: state.terrainVersion)
         }
+        animator.boom(event.cx, event.cy, BOOM_CRATER_FRAME, BOOM_LAST_FRAME)
+        _uiState.update { it.copy(boom = null) }
+    }
 
     private fun onRoundEnd(event: MatchEvent.RoundEnd) =
         _uiState.update {
@@ -138,35 +165,6 @@ class GameViewModel : ViewModel() {
             )
         }
 
-    /**
-     * Plays the trajectory back at screen rate.
-     *
-     * The path holds ~300 points at 120 Hz, so consuming two per frame at 60 fps gives
-     * the real flight time (§13). `speedMultiplier` only changes how many are consumed,
-     * never the physics.
-     */
-    private suspend fun animate(event: MatchEvent.ShotFired) {
-        val path = event.result.path
-        val steps = event.result.steps
-        var i = 0
-        while (i < steps) {
-            awaitFrame()
-            val x = path[i * 2]
-            val y = path[i * 2 + 1]
-            _uiState.update { state ->
-                state.copy(
-                    canePoint = Offset(x, y),
-                    trail = (state.trail + Offset(x, y)).takeLast(TRAIL_LIMIT),
-                )
-            }
-            i += POINTS_PER_FRAME * speedMultiplier
-        }
-        if (event.result.sunHit) {
-            _uiState.update { it.copy(sunHit = true) }
-        }
-    }
-
-    private companion object {
-        const val TRAIL_LIMIT = 12
-    }
+    private fun leavesACrater(event: MatchEvent.ShotFired): Boolean =
+        event.result.outcome is Outcome.HitTerrain || event.result.outcome is Outcome.HitPanda
 }

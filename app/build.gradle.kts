@@ -4,6 +4,16 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+/**
+ * The sprites are build output of `tools/gen_sprites.py` (see AGENTS.md), so they are
+ * packaged straight from `art/sprites` instead of being copied into the repository. A
+ * second copy would drift the moment somebody regenerates the art.
+ */
+val syncSprites by tasks.registering(Sync::class) {
+    from(rootProject.layout.projectDirectory.dir("art/sprites")) { include("*.png") }
+    into(layout.buildDirectory.dir("generated/assets/sprites"))
+}
+
 android {
     namespace = "dev.bambu.app"
     compileSdk = 35
@@ -27,6 +37,8 @@ android {
     buildFeatures {
         compose = true
     }
+
+    sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/assets"))
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -62,4 +74,9 @@ dependencies {
 
     testImplementation(libs.kotlin.test)
     testImplementation(libs.junit)
+}
+
+// The assets have to exist before they are merged into the APK.
+tasks.matching { it.name.startsWith("merge") && it.name.endsWith("Assets") }.configureEach {
+    dependsOn(syncSprites)
 }

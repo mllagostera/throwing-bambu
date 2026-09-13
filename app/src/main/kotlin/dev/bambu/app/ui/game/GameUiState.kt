@@ -1,6 +1,7 @@
 package dev.bambu.app.ui.game
 
 import androidx.compose.ui.geometry.Offset
+import dev.bambu.app.render.BoomState
 import dev.bambu.app.render.TerrainBitmap
 import dev.bambu.core.Scenario
 import dev.bambu.core.Shot
@@ -24,8 +25,13 @@ data class GameUiState(
     val scores: List<Int> = listOf(0, 0),
     val round: Int = 0,
     val canePoint: Offset? = null,
+    val caneFrame: Int = 0,
     val trail: List<Offset> = emptyList(),
-    val sunHit: Boolean = false,
+    val boom: BoomState? = null,
+    /** The sun pulls its `ouch` face for a second after being hit. */
+    val sunOuch: Boolean = false,
+    /** Pose per player, so the thrower raises an arm while its cane is in the air. */
+    val pandaPoses: Map<Int, Int> = emptyMap(),
     /** Last shot of each player, for the "Repeat previous" shortcut. */
     val lastShots: Map<Int, Shot> = emptyMap(),
     val roundWinner: Int? = null,

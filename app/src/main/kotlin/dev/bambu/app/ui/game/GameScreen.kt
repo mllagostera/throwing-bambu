@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.bambu.app.render.GameCanvas
+import dev.bambu.app.render.GameFrame
+import dev.bambu.app.render.rememberGameSprites
 import dev.bambu.core.G
 import dev.bambu.core.logicalWidth
 
@@ -49,6 +51,7 @@ fun GameScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val density = LocalDensity.current
+    val sprites = rememberGameSprites()
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenW = with(density) { maxWidth.roundToPx() }
@@ -68,12 +71,19 @@ fun GameScreen(
         val terrain = state.terrain
         if (scenario != null && terrain != null) {
             GameCanvas(
-                scenario = scenario,
-                terrain = terrain,
-                canePoint = state.canePoint,
-                trail = state.trail,
-                sunHit = state.sunHit,
-                terrainVersion = state.terrainVersion,
+                frame =
+                    GameFrame(
+                        scenario = scenario,
+                        terrain = terrain,
+                        terrainVersion = state.terrainVersion,
+                        canePoint = state.canePoint,
+                        caneFrame = state.caneFrame,
+                        trail = state.trail,
+                        boom = state.boom,
+                        sunOuch = state.sunOuch,
+                        pandaPoses = state.pandaPoses,
+                    ),
+                sprites = sprites,
                 modifier = Modifier.fillMaxSize(),
             )
         }
