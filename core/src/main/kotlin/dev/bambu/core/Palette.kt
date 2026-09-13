@@ -36,12 +36,15 @@ object Palette {
     // Named EGA indices, so loose numbers do not spread through the code.
     const val BLACK: Byte = 0
     const val BLUE: Byte = 1
+    const val GREEN_INDEX: Byte = 2
     const val CYAN: Byte = 3
     const val RED: Byte = 4
     const val MAGENTA: Byte = 5
     const val BROWN: Byte = 6
     const val DARK_GREY: Byte = 8
     const val LIGHT_BLUE: Byte = 9
+    const val LIGHT_GREEN_INDEX: Byte = 10
+    const val LIGHT_RED_INDEX: Byte = 12
     const val YELLOW: Byte = 14
 
     /**

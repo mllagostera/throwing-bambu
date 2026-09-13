@@ -20,7 +20,9 @@ java {
 }
 
 dependencies {
-    implementation(libs.coroutines.core)
+    // `api`, not `implementation`: MatchEngine exposes Flow in its public API, so
+    // consumers need the coroutines types on their compile classpath.
+    api(libs.coroutines.core)
 
     testImplementation(libs.kotlin.test)
     testImplementation(libs.junit)

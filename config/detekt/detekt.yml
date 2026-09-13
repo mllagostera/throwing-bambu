@@ -6,8 +6,10 @@ build:
 complexity:
   LongParameterList:
     # simulate(scenario, shooter, shot, wind, scratch) is the contract signature (§8).
+    # Composables take their state through parameters: that is the pattern, not a smell.
     functionThreshold: 6
     constructorThreshold: 8
+    ignoreAnnotated: ['Composable']
   NestedBlockDepth:
     # The calibration sweeps walk angle x power x wind: the nesting is the test space
     # itself, not accidental complexity.
@@ -28,6 +30,8 @@ style:
     # geometric literals read fine as they are. In Rng.kt and Trig.kt the numbers *are*
     # the algorithm (xorshift shifts, 2^24, degrees to radians): naming them would make
     # the code less readable, not more.
-    excludes: ['**/test/**', '**/render/**', '**/Rng.kt', '**/Trig.kt']
+    # `**/ui/**` and `**/render/**`: dp sizes, alpha values and grid offsets read better
+    # as literals at the point of use than behind a name.
+    excludes: ['**/test/**', '**/render/**', '**/ui/**', '**/Rng.kt', '**/Trig.kt']
   MaxLineLength:
     maxLineLength: 120

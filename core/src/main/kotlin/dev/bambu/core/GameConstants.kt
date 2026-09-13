@@ -39,6 +39,9 @@ object G {
     const val SUN_W = 20
     const val SUN_H = 20
 
+    /** The game is always two-player; the protocol and the match loop assume it. */
+    const val PLAYERS = 2
+
     // Shot ranges
     const val ANGLE_MIN = 0
     const val ANGLE_MAX = 90

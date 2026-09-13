@@ -384,6 +384,18 @@ sealed interface MatchEvent {
 
 The loop: `TurnStart` → `sources[current].nextShot(...)` → `simulate` → `ShotFired` → apply the crater → evaluate → switch turns. The UI only consumes `events` and animates.
 
+`events` is emitted **without a buffer**: `emit` suspends until the collector has taken the event, so the engine runs at the pace of whoever is watching and a crater cannot open before the UI has finished animating the throw that caused it.
+
+Two rules the original specification left implicit:
+
+```kotlin
+// Scenario seed for a round. Derived, like the wind, so nothing has to be transmitted.
+fun scenarioSeedForRound(seed: Long, round: Int): Long = seed * 0x27220A95L + round
+```
+
+- The **opening player alternates each round**: round `r` is opened by `(startingPlayer + r) % 2`, as in the original.
+- An own goal loses the round for whoever threw it, and the crater is applied on `HitPanda` just as on `HitTerrain`.
+
 `MatchEngine` uses `simulate` (owned array), never `simulateInto`: events outlive the turn that produced them. `scores` is copied when building `RoundEnd`, so the event does not expose the engine's internal array.
 
 ---

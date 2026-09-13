@@ -5,7 +5,7 @@ Derived from [`DEVELOPMENT_SPEC.md`](DEVELOPMENT_SPEC.md). The specification is 
 - **Plan version:** 2.0 (English, retheme applied)
 - **Base:** specification §0–§18, with D-01…D-09 and D-12 already incorporated
 - **Estimate:** ~23 developer-days for the whole project (1 person; excludes physical-device testing in M6)
-- **Status:** M0 and M1 complete. Next: M2.
+- **Status:** M0 and M1 complete; M2 code complete. Next: M3 or M5.
 
 ---
 
@@ -213,22 +213,26 @@ The drift in range and time is the error of the explicit Euler integrator, insid
 
 ---
 
-### M2 — Geometric rendering and hot-seat (3 d) — *next*
+### M2 — Geometric rendering and hot-seat — *code complete, pending on-device validation*
 
 **Goal:** a playable local 3-round match drawn with coloured rectangles. **No dependency on art.**
 
 | ID | Task | Est. | Depends on |
 |---|---|---|---|
-| T-14 | `ShotSource` + `HumanShotSource` (Channel) + `AiShotSource` (stub) | 0.2 d | M1 |
-| T-15 | `MatchEngine`: loop, `MatchEvent`, crater, score, rounds, `roundsToWin` | 0.7 d | T-14 |
-| T-16 | `TerrainBitmap`: ARGB `IntArray` from `mask`+`color`+palette → `ImageBitmap`; regenerated only per crater, patching the affected rect | 0.5 d | M1 |
-| T-17 | `GameCanvas`: sky gradient, skyline, terrain, sun, pandas, cane, 12-point trail; `FilterQuality.None` everywhere; sky-coloured side bars | 0.6 d | T-16 |
-| T-18 | Shot animation: 2 path points per frame at 60 fps, `speedMultiplier` 1×/2× | 0.3 d | T-17 |
-| T-19 | HUD (score, turn, proportional wind arrow + value) and controls (2 sliders + editable numeric field, **Repeat previous**, Throw! button) | 0.6 d | T-15 |
-| T-20 | Navigation `Menu → Mode → Setup → Game → Result` + landscape lock (D-04) | 0.4 d | T-19 |
-| T-21 | `MatchEngine` survives rotation and backgrounding: the engine lives in a `ViewModel` with `viewModelScope`, the UI only consumes `events` | 0.3 d | T-15 |
+| ✅ T-14 | `ShotSource` + `HumanShotSource` (Channel) + `AiShotSource` (stub) | 0.2 d | M1 |
+| ✅ T-15 | `MatchEngine`: loop, `MatchEvent`, crater, score, rounds, `roundsToWin` | 0.7 d | T-14 |
+| ✅ T-16 | `TerrainBitmap`: ARGB `IntArray` from `mask`+`color`+palette → `ImageBitmap`; regenerated only per crater, patching the affected rect | 0.5 d | M1 |
+| ✅ T-17 | `GameCanvas`: sky gradient, skyline, terrain, sun, pandas, cane, 12-point trail; `FilterQuality.None` everywhere; sky-coloured side bars | 0.6 d | T-16 |
+| ✅ T-18 | Shot animation: 2 path points per frame at 60 fps, `speedMultiplier` 1×/2× | 0.3 d | T-17 |
+| ✅ T-19 | HUD (score, turn, proportional wind arrow + value) and controls (2 sliders + editable numeric field, **Repeat previous**, Throw! button) | 0.6 d | T-15 |
+| ✅ T-20 | Navigation `Menu → Mode → Setup → Game → Result` + landscape lock (D-04) | 0.4 d | T-19 |
+| ✅ T-21 | `MatchEngine` survives rotation and backgrounding: the engine lives in a `ViewModel` with `viewModelScope`, the UI only consumes `events` | 0.3 d | T-15 |
 
-**DoD:** a full 3-round match between two humans on one device, wind visibly changing each turn, craters persisting within the round, correct score and a result screen. Test 15.11 green.
+**DoD:** ✅ test 15.11 green, plus seven more engine tests (46 in total). ⏳ the playable part — a full 3-round match, wind changing each turn, craters persisting, correct score — needs a device or emulator, which the development container does not have. The CI compiles and lints `app`; playing it is the user's check.
+
+**Design decision taken here:** `MatchEngine` emits with no buffer, so `emit` suspends until the collector has taken the event. The engine therefore runs at the pace of whoever is watching, and a crater cannot open before the UI has finished animating the throw that caused it. Without that back-pressure the engine would race ahead and the terrain would change mid-flight.
+
+**Two additions to the contract**, both derived from the specification rather than invented, and both now in `DEVELOPMENT_SPEC.md`: `scenarioSeedForRound` (the per-round scenario seed, derived like the wind so nothing has to be transmitted) and the rule that the opening player alternates each round, as in the original.
 
 **Risk note for §17.5:** T-16 is exactly where performance sinks if anyone regenerates the bitmap per frame. It is verified in M4 with the Profiler, but the decision is taken here.
 
@@ -329,7 +333,7 @@ The art is already delivered in `art/` and passes `tools/verify_assets.py`. This
 | 8 | 90° at low power → own goal | M1 | ✅ |
 | 9 | `simulate` never exceeds `MAX_STEPS` nor writes outside `path` | M1 | ✅ |
 | 10 | Round-trip of every `Msg` | M5 | ⏳ |
-| 11 | `MatchEngine` deterministic with deterministic sources | M2 | ⏳ |
+| 11 | `MatchEngine` deterministic with deterministic sources | M2 | ✅ |
 | 12 | Full loopback match, same score | M5 | ⏳ |
 
 **Tests added by this plan** (not in §15; they cover real risks):
@@ -395,6 +399,6 @@ Not part of M0–M7, and not to be started "while we are at it":
 
 ## 10. Immediate next step
 
-**M2**, which no longer depends on any open decision: `MatchEngine`, the geometric renderer and the local hot-seat match. It is the first milestone that produces something playable.
+Play the debug APK and confirm M2 on a real screen: that is the one part of its DoD this environment cannot check.
 
-D-10 and D-11 stay open until M5; they only touch the protocol.
+After that, **M3** (AI) and **M5** (transport) are both unblocked and independent of each other — M3 only touches `core`, M5 only touches `transport`. D-10 and D-11 stay open until M5.
