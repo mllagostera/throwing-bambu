@@ -2,31 +2,34 @@ package dev.bambu.app.ui.game
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -150,98 +153,123 @@ private fun Controls(
     onThrow: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var angle by remember { mutableIntStateOf(45) }
-    var power by remember { mutableIntStateOf(50) }
+    // The text is the single source of truth, so a half-typed value is never fought over
+    // by the slider. The slider writes into it just like the keyboard does.
+    var angleText by remember { mutableStateOf("45") }
+    var powerText by remember { mutableStateOf("50") }
+    val angle = angleText.toIntOrNull()?.coerceIn(G.ANGLE_MIN, G.ANGLE_MAX)
+    val power = powerText.toIntOrNull()?.coerceIn(G.POWER_MIN, G.POWER_MAX)
 
-    Column(
+    Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.55f))
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+                .background(Color.Black.copy(alpha = 0.45f))
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        NumericSlider(
-            label = "Angle",
+        CompactSlider(
+            label = "ANG",
+            text = angleText,
             value = angle,
             range = G.ANGLE_MIN..G.ANGLE_MAX,
             enabled = state.canAim,
-            onValueChange = { angle = it },
+            onTextChange = { angleText = it },
+            modifier = Modifier.weight(1f),
         )
-        NumericSlider(
-            label = "Power",
+        CompactSlider(
+            label = "PWR",
+            text = powerText,
             value = power,
             range = G.POWER_MIN..G.POWER_MAX,
             enabled = state.canAim,
-            onValueChange = { power = it },
+            onTextChange = { powerText = it },
+            modifier = Modifier.weight(1f),
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+
+        val previous = state.lastShots[state.currentPlayer]
+        TextButton(
+            enabled = state.canAim && previous != null,
+            contentPadding = PaddingValues(horizontal = 8.dp),
+            onClick = {
+                previous?.let {
+                    angleText = it.angle.toString()
+                    powerText = it.power.toString()
+                }
+            },
         ) {
-            val previous = state.lastShots[state.currentPlayer]
-            TextButton(
-                enabled = state.canAim && previous != null,
-                onClick = {
-                    previous?.let {
-                        angle = it.angle
-                        power = it.power
-                    }
-                },
-            ) {
-                Text("Repeat previous")
-            }
-            Box(modifier = Modifier.weight(1f))
-            Button(
-                enabled = state.canAim,
-                onClick = { onThrow(angle, power) },
-            ) {
-                Text(if (state.canAim) "Throw!" else "…")
-            }
+            Text("Repeat", style = MaterialTheme.typography.labelLarge)
+        }
+        Button(
+            enabled = state.canAim && angle != null && power != null,
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            onClick = {
+                if (angle != null && power != null) onThrow(angle, power)
+            },
+        ) {
+            Text("Throw!", style = MaterialTheme.typography.labelLarge)
         }
     }
 }
 
 /**
- * A slider with an editable numeric field beside it.
+ * Label, editable number and slider on a single line.
  *
- * The original was played by typing numbers, and keeping that route is what lets a
- * player adjust one degree at a time — which a slider on a phone cannot do (§14).
+ * The panel used to stack two of these plus a button row and swallowed a third of the
+ * screen. The playfield is the point of the screen, so the controls get one line: the
+ * number stays big enough to read at a glance and typeable for one-unit adjustments,
+ * which is the route the original was played with (§14).
  */
 @Composable
-private fun NumericSlider(
+private fun CompactSlider(
     label: String,
-    value: Int,
+    text: String,
+    value: Int?,
     range: IntRange,
     enabled: Boolean,
-    onValueChange: (Int) -> Unit,
+    onTextChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(label, color = Color.White, modifier = Modifier.width(64.dp))
+        Text(
+            text = label,
+            color = Color.White.copy(alpha = 0.7f),
+            style = MaterialTheme.typography.labelMedium,
+        )
+        BasicTextField(
+            value = text,
+            onValueChange = { typed ->
+                // Digits only, and never longer than the widest value in range.
+                val digits = typed.filter { it.isDigit() }.take(range.last.toString().length)
+                onTextChange(digits)
+            },
+            enabled = enabled,
+            singleLine = true,
+            textStyle =
+                MaterialTheme.typography.titleMedium.copy(
+                    color = if (value == null) Color(0xFFFF8A80) else Color.White,
+                    textAlign = TextAlign.Center,
+                ),
+            cursorBrush = SolidColor(Color.White),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier =
+                Modifier
+                    .width(44.dp)
+                    .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                    .padding(vertical = 4.dp),
+        )
         Slider(
-            value = value.toFloat(),
-            onValueChange = { onValueChange(it.toInt().coerceIn(range)) },
+            value = (value ?: range.first).toFloat(),
+            onValueChange = { onTextChange(it.toInt().coerceIn(range).toString()) },
             valueRange = range.first.toFloat()..range.last.toFloat(),
             steps = (range.last - range.first - 1).coerceAtLeast(0),
             enabled = enabled,
             modifier = Modifier.weight(1f),
-        )
-        OutlinedTextField(
-            value = value.toString(),
-            onValueChange = { text ->
-                text.toIntOrNull()?.let { onValueChange(it.coerceIn(range)) }
-            },
-            singleLine = true,
-            enabled = enabled,
-            keyboardOptions =
-                androidx.compose.foundation.text
-                    .KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.width(88.dp),
         )
     }
 }
