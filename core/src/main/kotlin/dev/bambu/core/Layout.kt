@@ -1,11 +1,11 @@
 package dev.bambu.core
 
 /**
- * Escala de píxel entero para una pantalla dada (§3, D-04).
+ * Integer pixel scale for a given screen (§3, D-04).
  *
- * La escala no puede salir solo de la altura: con `W_MIN` forzado, el lienzo puede
- * acabar siendo más ancho que la pantalla (1080×2400 en vertical daría escala 12 y
- * 320 × 12 = 3840 px sobre 1080 disponibles). El bucle la baja hasta que quepa.
+ * The scale cannot come from the height alone: with `W_MIN` forced, the canvas can end
+ * up wider than the screen (1080×2400 in portrait would give scale 12 and 320 × 12 =
+ * 3840 px over the 1080 available). The loop lowers it until it actually fits.
  */
 fun logicalScale(
     screenW: Int,
@@ -19,9 +19,8 @@ fun logicalScale(
 }
 
 /**
- * Anchura del lienzo lógico. La altura es siempre [G.H]; lo que cambia es cuántos
- * edificios caben. El sobrante horizontal son barras del color del cielo, nunca
- * estiramiento.
+ * Width of the logical canvas. The height is always [G.H]; what changes is how many
+ * buildings fit. Horizontal leftovers are sky-coloured bars, never stretching.
  */
 fun logicalWidth(
     screenW: Int,

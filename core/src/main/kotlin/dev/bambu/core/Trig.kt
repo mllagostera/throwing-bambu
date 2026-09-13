@@ -1,11 +1,11 @@
 package dev.bambu.core
 
 /**
- * Tablas de seno y coseno por grado entero (§5).
+ * Sine and cosine tables per integer degree (§5).
  *
- * `Math.sin` no garantiza resultados bit a bit idénticos entre implementaciones de JVM;
- * `StrictMath` sí. Como el ángulo de disparo es un entero de grados, la tabla se calcula
- * una vez al cargar la clase y la ruta de simulación no vuelve a llamar a trigonometría.
+ * `Math.sin` does not guarantee bit-identical results across JVM implementations;
+ * `StrictMath` does. Since the shot angle is an integer number of degrees, the table is
+ * built once at class load and the simulation path never calls trigonometry again.
  */
 internal val SIN = FloatArray(91) { StrictMath.sin(it * StrictMath.PI / 180.0).toFloat() }
 

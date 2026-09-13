@@ -5,15 +5,16 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.abs
+import kotlin.math.sqrt
 
 class PhysicsTest {
     private val launchX = (TestScenarios.SHOOTER_X + G.HAND_DX).toFloat()
     private val launchY = TestScenarios.LAUNCH_Y.toFloat()
 
     /**
-     * §15.4 y calibración del §2: sin viento ni obstáculos, el alcance a 45° coincide con
-     * `v²/g` dentro del 2 %. Con potencia 68 eso son 279,8 px, no los ~300 px que decía
-     * la versión inicial de la especificación (D-05).
+     * §15.4 and the calibration in §2: with no wind and no obstacles, the range at 45°
+     * matches `v²/g` within 2 %. At power 68 that is 279.8 px, not the ~300 px the first
+     * version of the specification claimed (D-05).
      */
     @Test
     fun rangeAt45DegreesMatchesBallistics() {
@@ -24,9 +25,9 @@ class PhysicsTest {
         val expected = speed * speed / G.GRAVITY
         val measured = TestScenarios.rangeAtLaunchHeight(result, launchX, launchY)
 
-        assertTrue("el proyectil nunca vuelve a la altura de lanzamiento", measured > 0)
-        assertEquals("alcance fuera de tolerancia", expected.toDouble(), measured.toDouble(), expected * 0.02)
-        assertEquals("la calibración del §2 ha cambiado", 279.8, expected.toDouble(), 0.5)
+        assertTrue("the cane never returns to the throwing height", measured > 0)
+        assertEquals("range outside tolerance", expected.toDouble(), measured.toDouble(), expected * 0.02)
+        assertEquals("the §2 calibration has changed", 279.8, expected.toDouble(), 0.5)
     }
 
     @Test
@@ -45,10 +46,10 @@ class PhysicsTest {
             }
         }
         val seconds = steps * G.DT
-        assertEquals("tiempo de vuelo fuera de la calibración", 2.645, seconds.toDouble(), 0.05)
+        assertEquals("flight time outside the calibration", 2.645, seconds.toDouble(), 0.05)
     }
 
-    /** §15.5: el viento desplaza el impacto de forma simétrica. */
+    /** §15.5: wind shifts the impact symmetrically. */
     @Test
     fun windShiftsRangeSymmetrically() {
         val scenario = TestScenarios.empty()
@@ -64,15 +65,15 @@ class PhysicsTest {
         val tail = range(10)
         val head = range(-10)
 
-        assertTrue("el viento a favor no alarga el disparo", tail > calm)
-        assertTrue("el viento en contra no acorta el disparo", head < calm)
-        assertEquals("el viento no es simétrico", (tail - calm).toDouble(), (calm - head).toDouble(), 1.0)
+        assertTrue("a tailwind does not lengthen the shot", tail > calm)
+        assertTrue("a headwind does not shorten the shot", head < calm)
+        assertEquals("wind is not symmetric", (tail - calm).toDouble(), (calm - head).toDouble(), 1.0)
     }
 
-    /** §15.7: impacto en el gorila enemigo. */
+    /** §15.7: hitting the opposing panda. */
     @Test
     fun hittingTheOpponentIsReported() {
-        // Primero se mide dónde cae el disparo, y después se coloca al enemigo ahí.
+        // First measure where the shot lands, then put the opponent there.
         val probe = simulate(TestScenarios.empty(), 0, Shot(0, 45, 68), wind = 0)
         val impact = TestScenarios.rangeAtLaunchHeight(probe, launchX, launchY)
         val target = (launchX + impact).toInt()
@@ -80,35 +81,35 @@ class PhysicsTest {
         val scenario = TestScenarios.empty(opponentX = target, opponentAlive = true)
         val result = simulate(scenario, 0, Shot(0, 45, 68), wind = 0)
 
-        assertEquals(Outcome.HitGorilla(1), result.outcome)
-        assertTrue("impacto demasiado lejos del objetivo", abs(result.impactX - target) <= G.GORILLA_W)
+        assertEquals(Outcome.HitPanda(1), result.outcome)
+        assertTrue("impact too far from the target", abs(result.impactX - target) <= G.PANDA_W)
     }
 
-    /** §15.8: a 90° con potencia baja el plátano vuelve y golpea a quien lo lanzó. */
+    /** §15.8: at 90° with low power the cane comes back down onto the thrower. */
     @Test
     fun straightUpShotComesBackAndHitsTheShooter() {
         val scenario = TestScenarios.empty()
         val result = simulate(scenario, 0, Shot(0, 90, 20), wind = 0)
 
-        assertEquals(Outcome.HitGorilla(0), result.outcome)
-        // Si impactara dentro de los pasos de gracia sería un autogol falso, no un regreso.
-        assertTrue("el proyectil no llegó a volar: ${result.steps} pasos", result.steps > 20)
+        assertEquals(Outcome.HitPanda(0), result.outcome)
+        // Landing within the grace steps would be a false own goal, not a return.
+        assertTrue("the cane never flew: ${result.steps} steps", result.steps > 20)
     }
 
     @Test
     fun theShotLeavesItsOwnHitboxBeforeGraceEnds() {
-        // La gracia de 5 pasos solo es válida si para entonces el plátano ya salió del AABB.
+        // The 5-step grace only works if by then the cane is already out of the AABB.
         val scenario = TestScenarios.empty()
         val result = simulate(scenario, 0, Shot(0, 90, 20), wind = 0)
         val yAtGrace = result.path[(G.SELF_HIT_GRACE_STEPS - 1) * 2 + 1]
-        val topOfHitbox = TestScenarios.ROOF_Y - G.GORILLA_H / 2 - (G.GORILLA_H / 2 + G.BANANA_R)
+        val topOfHitbox = TestScenarios.ROOF_Y - G.PANDA_H / 2 - (G.PANDA_H / 2 + G.CANE_R)
         assertTrue(
-            "al acabar la gracia el plátano sigue dentro del AABB propio ($yAtGrace >= $topOfHitbox)",
+            "when grace ends the cane is still inside its own AABB ($yAtGrace >= $topOfHitbox)",
             yAtGrace < topOfHitbox,
         )
     }
 
-    /** §15.9: `simulate` nunca excede MAX_STEPS ni escribe fuera de `path`. */
+    /** §15.9: `simulate` never exceeds MAX_STEPS nor writes outside `path`. */
     @Test
     fun neverExceedsMaxStepsOrPathBounds() {
         val scenario = TestScenarios.empty()
@@ -116,15 +117,15 @@ class PhysicsTest {
             for (power in intArrayOf(1, 25, 50, 75, 100)) {
                 for (wind in intArrayOf(-10, 0, 10)) {
                     val r = simulate(scenario, 0, Shot(0, angle, power), wind)
-                    assertTrue("steps fuera de rango: ${r.steps}", r.steps in 1..G.MAX_STEPS)
-                    assertEquals("path mal dimensionado", r.steps * 2, r.path.size)
-                    for (v in r.path) assertTrue("coordenada no finita", v.isFinite())
+                    assertTrue("steps out of range: ${r.steps}", r.steps in 1..G.MAX_STEPS)
+                    assertEquals("path wrongly sized", r.steps * 2, r.path.size)
+                    for (v in r.path) assertTrue("coordinate is not finite", v.isFinite())
                 }
             }
         }
     }
 
-    /** D-01: el `path` publicado es propio; el de `simulateInto` es prestado. */
+    /** D-01: the published `path` is owned; the one from `simulateInto` is borrowed. */
     @Test
     fun simulateCopiesThePathButSimulateIntoDoesNot() {
         val scenario = TestScenarios.empty()
@@ -134,17 +135,17 @@ class PhysicsTest {
         simulateInto(scenario, 0, Shot(0, 30, 50), 0, scratch)
         val borrowed = simulateInto(scenario, 0, Shot(0, 60, 90), 0, scratch)
 
-        assertTrue("simulateInto debería devolver el búfer prestado", borrowed.path === scratch)
-        // Una segunda simulación no puede alterar un resultado ya publicado.
+        assertTrue("simulateInto should return the borrowed buffer", borrowed.path === scratch)
+        // A second simulation must not alter an already published result.
         val first = owned.path.copyOf()
         simulateInto(scenario, 0, Shot(0, 10, 100), 0, scratch)
-        assertTrue("el path publicado fue sobrescrito", first.contentEquals(owned.path))
+        assertTrue("the published path was overwritten", first.contentEquals(owned.path))
     }
 
     /**
-     * A3 (D-03): sin muestreo de segmento, el plátano atraviesa una losa fina en la caída.
-     * El test comprueba además que el paso que impacta salta más de un píxel: si no lo
-     * hiciera, no estaría probando nada.
+     * A3 (D-03): without segment sampling the cane flies through a thin slab on the way
+     * down. The test also checks that the impacting step jumps more than one pixel: if
+     * it did not, it would be proving nothing.
      */
     @Test
     fun fastFallDoesNotTunnelThroughAThinSlab() {
@@ -157,16 +158,16 @@ class PhysicsTest {
 
         val last = result.steps - 1
         val jump = abs(result.path[last * 2 + 1] - result.path[(last - 1) * 2 + 1])
-        assertTrue("el paso final no salta más de 1 px ($jump): el test no prueba tunelado", jump > 1.5f)
+        assertTrue("the final step does not jump past 1 px ($jump): the test proves nothing", jump > 1.5f)
     }
 
     /**
-     * Cota del avance por paso, medida y no estimada: un barrido completo de ángulos,
-     * potencias, vientos y alturas de tejado da un máximo de 2,50 px (2,05 horizontal,
-     * 2,32 vertical). Por encima de 1 px, el muestreo puntual ya puede saltarse un istmo
-     * de terreno, que es lo que justifica el DDA de [firstSolid] (D-03).
+     * Ceiling on the advance per step, measured rather than estimated: a full sweep of
+     * angles, powers, winds and roof heights peaks at 2.50 px (2.05 horizontal, 2.32
+     * vertical). Above 1 px, point sampling can already skip a terrain isthmus, which is
+     * what justifies the DDA in [Terrain.firstSolidOnSegment] (D-03).
      *
-     * Si este techo sube, el margen anti-tunelado se estrecha y hay que revisar D-03.
+     * If this ceiling rises, the anti-tunnelling margin narrows and D-03 needs revisiting.
      */
     @Test
     fun stepAdvanceStaysBelowTheMeasuredCeiling() {
@@ -179,33 +180,33 @@ class PhysicsTest {
                     for (i in 1 until r.steps) {
                         val dx = r.path[i * 2] - r.path[(i - 1) * 2]
                         val dy = r.path[i * 2 + 1] - r.path[(i - 1) * 2 + 1]
-                        val d = kotlin.math.sqrt(dx * dx + dy * dy)
+                        val d = sqrt(dx * dx + dy * dy)
                         if (d > maxStep) maxStep = d
                     }
                 }
             }
         }
-        assertTrue("el avance por paso ha subido a $maxStep px (medido: 2,50)", maxStep < 2.6f)
-        assertTrue("el avance por paso supera 1 px: el DDA es necesario", maxStep > 1f)
+        assertTrue("advance per step rose to $maxStep px (measured: 2.50)", maxStep < 2.6f)
+        assertTrue("advance per step exceeds 1 px: the DDA is needed", maxStep > 1f)
     }
 
     @Test
-    fun theSunDoesNotStopTheBanana() {
-        // §8: el sol cambia de expresión, no frena el proyectil. Por eso no hay Outcome.HitSun.
+    fun theSunDoesNotStopTheCane() {
+        // §8: the sun changes expression, it does not stop the cane. Hence no HitSun.
         val scenario = TestScenarios.empty()
         var sawSun = false
         for (angle in 40..85) {
             val r = simulate(scenario, 0, Shot(0, angle, 100), wind = 0)
             if (r.sunHit) {
                 sawSun = true
-                assertNotEquals("el sol terminó el vuelo", 0, r.steps)
+                assertNotEquals("the sun ended the flight", 0, r.steps)
                 assertTrue(
-                    "el vuelo acabó en el sol",
+                    "the flight ended at the sun",
                     r.outcome is Outcome.OffScreen || r.outcome is Outcome.HitTerrain,
                 )
             }
         }
-        assertTrue("ningún disparo alcanzó el sol: el test no comprueba nada", sawSun)
+        assertTrue("no shot reached the sun: the test checks nothing", sawSun)
     }
 
     @Test
@@ -222,6 +223,6 @@ class PhysicsTest {
         for (angle in 10..80 step 10) {
             simulate(scenario, 0, Shot(0, angle, 70), wind = 3)
         }
-        assertEquals("la física ha tocado el terreno", before, scenario.terrain.fingerprint())
+        assertEquals("physics has touched the terrain", before, scenario.terrain.fingerprint())
     }
 }

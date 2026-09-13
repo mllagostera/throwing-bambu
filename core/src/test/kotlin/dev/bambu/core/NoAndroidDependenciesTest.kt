@@ -6,13 +6,13 @@ import java.io.File
 import java.util.zip.ZipFile
 
 /**
- * Regla de oro §0.1: `:core` no importa nada de Android.
+ * Golden rule §0.1: `:core` imports nothing from Android.
  *
- * Un `import android.*` directo ya no compila, porque el SDK no está en el classpath.
- * Lo que este test cubre es el caso indirecto: una dependencia añadida a `:core` que
- * arrastre clases de Android (por ejemplo `kotlinx-coroutines-android` en lugar de
- * `-core`). Ese error compila sin problema y solo se nota cuando el módulo deja de ser
- * testeable en JVM pura.
+ * A direct `import android.*` no longer compiles, because the SDK is not on the
+ * classpath. What this test covers is the indirect case: a dependency added to `:core`
+ * that drags Android classes in (for example `kotlinx-coroutines-android` instead of
+ * `-core`). That mistake compiles fine and only shows up when the module stops being
+ * testable on a plain JVM.
  */
 class NoAndroidDependenciesTest {
     @Test
@@ -27,10 +27,7 @@ class NoAndroidDependenciesTest {
                 .map { it.name }
 
         if (offenders.isNotEmpty()) {
-            fail(
-                "El classpath de :core contiene clases de Android, lo que rompe la regla " +
-                    "de oro §0.1. Artefactos culpables: $offenders",
-            )
+            fail("The :core classpath contains Android classes, which breaks golden rule §0.1: $offenders")
         }
     }
 
@@ -48,24 +45,17 @@ class NoAndroidDependenciesTest {
                 .toList()
 
         if (offenders.isNotEmpty()) {
-            fail("Clases de :core que referencian tipos de Android: $offenders")
+            fail("Classes in :core referencing Android types: $offenders")
         }
     }
 
-    private fun File.containsAndroidClasses(): Boolean =
-        ZipFile(this).use { zip ->
-            zip.entries().asSequence().any { entry ->
-                entry.name.startsWith("android/") || entry.name.startsWith("androidx/")
-            }
-        }
-
     /**
-     * A1 (§5): la ruta de simulación no llama a trigonometría.
+     * A1 (§5): the simulation path does not call trigonometry.
      *
-     * `Math.sin` no garantiza el mismo resultado bit a bit entre implementaciones de JVM,
-     * y una divergencia de un ULP en el ángulo de salida se amplifica a lo largo del vuelo
-     * hasta cambiar el ganador de la ronda. Solo `Trig.kt` (tablas precalculadas con
-     * `StrictMath`) y `Rng.kt` (Box-Muller, fuera de la ruta de simulación) pueden usarla.
+     * `Math.sin` is not guaranteed to give bit-identical results across JVM
+     * implementations, and a one-ULP divergence in the launch angle is amplified over
+     * the flight until it changes who wins the round. Only `Trig.kt` (tables built with
+     * `StrictMath`) and `Rng.kt` (Box-Muller, outside the simulation path) may use it.
      */
     @Test
     fun simulationPathDoesNotCallTrigonometry() {
@@ -88,14 +78,21 @@ class NoAndroidDependenciesTest {
                 .toList()
 
         if (offenders.isNotEmpty()) {
-            fail("Trigonometría fuera de Trig.kt/Rng.kt: $offenders. Usa las tablas SIN/COS.")
+            fail("Trigonometry outside Trig.kt/Rng.kt: $offenders. Use the SIN/COS tables.")
         }
     }
 
+    private fun File.containsAndroidClasses(): Boolean =
+        ZipFile(this).use { zip ->
+            zip.entries().asSequence().any { entry ->
+                entry.name.startsWith("android/") || entry.name.startsWith("androidx/")
+            }
+        }
+
     /**
-     * Busca la secuencia en el pool de constantes sin parsear el .class.
-     * ISO-8859-1 mapea cada byte a un char 1:1, así que la búsqueda de una cadena
-     * ASCII sobre el volcado es exacta.
+     * Looks for the sequence in the constant pool without parsing the .class file.
+     * ISO-8859-1 maps every byte to a char one to one, so searching for an ASCII string
+     * over the dump is exact.
      */
     private fun ByteArray.containsUtf8Constant(needle: String): Boolean =
         String(this, Charsets.ISO_8859_1).contains(needle)

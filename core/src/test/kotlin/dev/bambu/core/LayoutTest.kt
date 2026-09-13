@@ -4,8 +4,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * A4 (D-04): el lienzo lógico escalado nunca puede ser más ancho que la pantalla.
- * La versión original de `logicalWidth` fallaba en cualquier móvil en vertical.
+ * A4 (D-04): the scaled logical canvas can never be wider than the screen. The original
+ * version of `logicalWidth` failed on any phone held in portrait.
  */
 class LayoutTest {
     @Test
@@ -14,20 +14,20 @@ class LayoutTest {
             for ((sw, sh) in listOf(w to h, h to w)) {
                 val scale = logicalScale(sw, sh)
                 val width = logicalWidth(sw, sh)
-                assertTrue("escala inválida en ${sw}x$sh: $scale", scale >= 1)
+                assertTrue("invalid scale at ${sw}x$sh: $scale", scale >= 1)
                 assertTrue(
-                    "el lienzo se sale de la pantalla en ${sw}x$sh: ${width * scale} > $sw",
+                    "canvas overflows the screen at ${sw}x$sh: ${width * scale} > $sw",
                     width * scale <= sw,
                 )
-                assertTrue("altura desbordada en ${sw}x$sh", G.H * scale <= sh)
-                assertTrue("anchura fuera del contrato: $width", width in G.W_MIN..G.W_MAX)
+                assertTrue("height overflows at ${sw}x$sh", G.H * scale <= sh)
+                assertTrue("width outside the contract: $width", width in G.W_MIN..G.W_MAX)
             }
         }
     }
 
     @Test
     fun scaleIsAnIntegerNumberOfPixels() {
-        // Píxel entero siempre (§0.4): nada de escalados fraccionarios.
+        // Whole pixels always (§0.4): no fractional scaling.
         val scale = logicalScale(2400, 1080)
         assertTrue(scale == 5)
     }

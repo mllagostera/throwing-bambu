@@ -1,3 +1,3 @@
-# `core` es determinista y se compara por comportamiento en tests. R8 puede ofuscarlo
-# (no usa reflexión), pero no debe eliminar nada alcanzable solo desde el motor.
+# `core` is deterministic and compared by behaviour in tests. R8 may obfuscate it (it
+# uses no reflection), but must not strip anything reachable only from the engine.
 -keep class dev.bambu.core.** { *; }

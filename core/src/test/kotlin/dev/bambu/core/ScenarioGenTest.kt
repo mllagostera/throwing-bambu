@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ScenarioGenTest {
-    /** §15.2: el mismo par (semilla, anchura) produce exactamente el mismo terreno. */
+    /** §15.2: the same (seed, width) pair produces exactly the same terrain. */
     @Test
     fun generateIsReproducible() {
         val reference = generate(SEED, G.W_MIN).terrain.fingerprint()
@@ -22,37 +22,37 @@ class ScenarioGenTest {
         assertNotEquals(a, b)
     }
 
-    /** §15.3: ningún tejado invade la banda de cielo y los gorilas nunca comparten edificio. */
+    /** §15.3: no roof invades the sky band and the pandas never share a building. */
     @Test
     fun invariantsHoldAcrossManySeeds() {
         forEachScenario { seed, width, s ->
             for (b in s.terrain.buildings) {
                 assertTrue(
-                    "tejado sobre SKY_BAND (semilla $seed, ancho $width): roofY=${b.roofY}",
+                    "roof above SKY_BAND (seed $seed, width $width): roofY=${b.roofY}",
                     b.roofY >= G.SKY_BAND,
                 )
-                assertTrue("altura fuera de rango: ${b.height}", b.height in G.BUILD_H_MIN..G.BUILD_H_MAX)
+                assertTrue("height out of range: ${b.height}", b.height in G.BUILD_H_MIN..G.BUILD_H_MAX)
             }
 
-            val (left, right) = s.gorillas
-            assertNotEquals("los dos gorilas en el mismo edificio", buildingOf(s, left.x), buildingOf(s, right.x))
-            assertTrue("los gorilas no están en orden", left.x < right.x)
+            val (left, right) = s.pandas
+            assertNotEquals("both pandas on the same building", buildingOf(s, left.x), buildingOf(s, right.x))
+            assertTrue("pandas are not left-to-right", left.x < right.x)
         }
     }
 
-    /** A2 (§17.4): el fallo clásico — un gorila más ancho que su propio edificio. */
+    /** A2 (§17.4): the classic bug — a panda wider than the building it stands on. */
     @Test
-    fun gorillasNeverStandOnTooNarrowBuildings() {
+    fun pandasNeverStandOnTooNarrowBuildings() {
         forEachScenario { seed, width, s ->
-            for (g in s.gorillas) {
-                val b = s.terrain.buildings[buildingOf(s, g.x)]
+            for (p in s.pandas) {
+                val b = s.terrain.buildings[buildingOf(s, p.x)]
                 assertTrue(
-                    "gorila más ancho que su edificio (semilla $seed, ancho $width): ${b.width}",
-                    b.width >= G.GORILLA_W + 4,
+                    "panda wider than its building (seed $seed, width $width): ${b.width}",
+                    b.width >= G.PANDA_W + 4,
                 )
-                assertTrue("el gorila se sale por la izquierda", g.x - G.GORILLA_W / 2 >= b.x)
-                assertTrue("el gorila se sale por la derecha", g.x + G.GORILLA_W / 2 <= b.x + b.width)
-                assertEquals("los pies no apoyan en el tejado", b.roofY, g.roofY)
+                assertTrue("panda overflows on the left", p.x - G.PANDA_W / 2 >= b.x)
+                assertTrue("panda overflows on the right", p.x + G.PANDA_W / 2 <= b.x + b.width)
+                assertEquals("feet do not rest on the roof", b.roofY, p.roofY)
             }
         }
     }
@@ -64,13 +64,20 @@ class ScenarioGenTest {
             assertEquals(0, buildings.first().x)
             assertEquals(width, buildings.last().x + buildings.last().width)
             for (i in 1 until buildings.size) {
-                assertEquals("hueco entre edificios", buildings[i - 1].x + buildings[i - 1].width, buildings[i].x)
+                assertEquals(
+                    "gap between buildings",
+                    buildings[i - 1].x + buildings[i - 1].width,
+                    buildings[i].x,
+                )
             }
-            // El suelo bajo cada tejado es sólido: nada de edificios huecos.
+            // Everything below a roof is solid: no hollow buildings.
             for (b in buildings) {
                 assertTrue(s.terrain.solid(b.x + b.width / 2, G.H - 1))
                 assertTrue(s.terrain.solid(b.x + b.width / 2, b.roofY))
-                assertTrue("hay terreno por encima del tejado", !s.terrain.solid(b.x + b.width / 2, b.roofY - 1))
+                assertTrue(
+                    "there is terrain above the roof",
+                    !s.terrain.solid(b.x + b.width / 2, b.roofY - 1),
+                )
             }
         }
     }

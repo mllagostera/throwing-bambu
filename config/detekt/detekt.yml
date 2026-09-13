@@ -1,33 +1,33 @@
-# Parte de la configuración por defecto de detekt (buildUponDefaultConfig = true).
-# Aquí solo van las desviaciones justificadas.
+# Builds on detekt's default configuration (buildUponDefaultConfig = true).
+# Only justified deviations live here.
 build:
   maxIssues: 0
 
 complexity:
   LongParameterList:
-    # simulate(scenario, shooter, shot, wind, scratch) es la firma del contrato (§8).
+    # simulate(scenario, shooter, shot, wind, scratch) is the contract signature (§8).
     functionThreshold: 6
     constructorThreshold: 8
   NestedBlockDepth:
-    # Los barridos de calibración recorren ángulo x potencia x viento: el anidamiento
-    # es el propio espacio de prueba, no complejidad accidental.
+    # The calibration sweeps walk angle x power x wind: the nesting is the test space
+    # itself, not accidental complexity.
     excludes: ['**/test/**']
 
 naming:
   MatchingDeclarationName:
-    # Los nombres de fichero los fija la especificación: GameConstants.kt contiene `object G`.
+    # File names are fixed by the specification: GameConstants.kt holds `object G`.
     active: false
 
   FunctionNaming:
-    # Los @Composable van en PascalCase por convención de Compose.
+    # @Composable functions are PascalCase by Compose convention.
     ignoreAnnotated: ['Composable']
 
 style:
   MagicNumber:
-    # Las constantes del juego viven en GameConstants.kt; en tests y render los
-    # literales geométricos son legibles tal cual. En Rng.kt y Trig.kt los números
-    # *son* el algoritmo (desplazamientos de xorshift, 2^24, grados a radianes):
-    # bautizarlos lo haría menos legible, no más.
+    # Game constants live in GameConstants.kt; in tests and in the renderer the
+    # geometric literals read fine as they are. In Rng.kt and Trig.kt the numbers *are*
+    # the algorithm (xorshift shifts, 2^24, degrees to radians): naming them would make
+    # the code less readable, not more.
     excludes: ['**/test/**', '**/render/**', '**/Rng.kt', '**/Trig.kt']
   MaxLineLength:
     maxLineLength: 120

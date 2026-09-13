@@ -5,9 +5,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Test §15.1. Los valores esperados no salen de ejecutar este mismo código: se
- * calcularon con una implementación independiente de xorshift64\* (en Python) a partir
- * de la definición del §4. Si esta secuencia cambia, cambian todas las partidas.
+ * Test §15.1. The expected values do not come from running this same code: they were
+ * computed with an independent implementation of xorshift64\* (in Python) from the
+ * definition in §4. If this sequence changes, every match changes with it.
  */
 class RngTest {
     @Test
@@ -26,7 +26,7 @@ class RngTest {
         assertEquals(2532300887602411097L, one.nextLong())
         assertEquals(4152556393845530201L, one.nextLong())
 
-        // La semilla 0 se sustituye por una constante: xorshift se quedaría clavado en 0.
+        // Seed 0 is replaced by a constant: xorshift would stay stuck at zero.
         val zero = Rng(0L)
         assertEquals(-1541515596852347406L, zero.nextLong())
         assertEquals(198525909433649115L, zero.nextLong())
@@ -55,9 +55,9 @@ class RngTest {
         val rng = Rng(7L)
         repeat(10000) {
             val v = rng.nextIntRange(-10, 10)
-            assertTrue("viento fuera de rango: $v", v in -10..10)
+            assertTrue("wind out of range: $v", v in -10..10)
             val f = rng.nextFloat()
-            assertTrue("nextFloat fuera de [0,1): $f", f >= 0f && f < 1f)
+            assertTrue("nextFloat outside [0,1): $f", f >= 0f && f < 1f)
         }
     }
 
@@ -68,17 +68,17 @@ class RngTest {
         val n = 20000
         repeat(n) {
             val g = rng.nextGaussian()
-            assertTrue("gaussiana no finita: $g", g.isFinite())
+            assertTrue("gaussian is not finite: $g", g.isFinite())
             sum += g
         }
-        // Media muestral: con n = 20 000 el error estándar es ~0,007.
+        // Sample mean: with n = 20 000 the standard error is about 0.007.
         assertEquals(0.0, sum / n, 0.05)
     }
 
     @Test
     fun windIsDerivedNotTransmitted() {
         assertEquals(listOf(-1, -1, -8, -6, -1, 5), List(6) { windForTurn(999L, it) })
-        // Mismo turno, misma semilla: los dos dispositivos calculan lo mismo.
+        // Same turn, same seed: both devices compute the same value.
         repeat(50) { turn ->
             assertEquals(windForTurn(31337L, turn), windForTurn(31337L, turn))
         }

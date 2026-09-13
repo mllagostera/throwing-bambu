@@ -1,44 +1,44 @@
 package dev.bambu.core
 
-/** Perfil del skyline (§7, paso 2). El orden de las constantes es contrato. */
-private enum class SkylineMode { ASCENDENTE, DESCENDENTE, ALEATORIO }
+/** Skyline profile (§7, step 2). The order of the constants is contract. */
+private enum class SkylineMode { ASCENDING, DESCENDING, RANDOM }
 
-// Rejilla de ventanas (D-07). Fijar estos valores es obligatorio: cambian el número de
-// llamadas al RNG y, con ello, todas las semillas.
+// Window grid (D-07). Pinning these values is mandatory: they change how many calls the
+// RNG takes and therefore every seed.
 private const val WIN_W = 3
 private const val WIN_H = 4
 private const val WIN_MARGIN = 3
 private const val WIN_GAP = 3
 private const val WIN_ON_THRESHOLD = 0.5f
 
-/** Ruido de altura en los perfiles ascendente y descendente (§7, paso 4). */
+/** Height noise in the ascending and descending profiles (§7, step 4). */
 private const val HEIGHT_NOISE = 15
 
-/** Holgura mínima del tejado para que quepa un gorila (§7, paso 8). */
-private const val GORILLA_CLEARANCE = 4
+/** Minimum roof clearance for a panda to fit (§7, step 8). */
+private const val PANDA_CLEARANCE = 4
 
-/** Con menos edificios no hay sitio para dos gorilas en edificios distintos. */
+/** With fewer buildings there is no room for two pandas on different ones. */
 private const val MIN_BUILDINGS = 4
 
 /**
- * Genera el escenario de una ronda (§7).
+ * Generates the scenario for one round (§7).
  *
- * El orden de las llamadas al RNG **es** el algoritmo: reordenar cualquier paso cambia
- * todos los escenarios ya jugados y rompe la compatibilidad entre versiones. Las fases
- * están separadas tal y como las numera la especificación —primero todas las alturas,
- * después todas las paletas, después todas las ventanas—, no entrelazadas por edificio.
+ * The order of the RNG calls **is** the algorithm: reordering any step changes every
+ * scenario already played and breaks compatibility between versions. The phases are
+ * kept separate exactly as the specification numbers them — first all the heights, then
+ * all the palettes, then all the windows — not interleaved per building.
  */
 fun generate(
     seed: Long,
     width: Int,
 ): Scenario {
-    require(width in G.W_MIN..G.W_MAX) { "width fuera del rango lógico: $width" }
+    require(width in G.W_MIN..G.W_MAX) { "width outside the logical range: $width" }
 
     val rng = Rng(seed)
     val mode = SkylineMode.entries[rng.nextInt(SkylineMode.entries.size)]
     val widths = buildingWidths(rng, width)
     val n = widths.size
-    require(n >= MIN_BUILDINGS) { "escenario con $n edificios: no caben dos gorilas separados" }
+    require(n >= MIN_BUILDINGS) { "scenario with $n buildings: two pandas cannot be kept apart" }
 
     val heights = buildingHeights(rng, mode, n)
     val palettes = IntArray(n) { rng.nextInt(Palette.N_FACADES) }
@@ -56,14 +56,15 @@ fun generate(
     }
 
     val terrain = paint(width, buildings)
-    val gorillas = placeGorillas(buildings)
-    return Scenario(width, terrain, gorillas, width / 2)
+    val pandas = placePandas(buildings)
+    return Scenario(width, terrain, pandas, width / 2)
 }
 
 /**
- * Anchuras acumuladas hasta cubrir el lienzo (§7, paso 3). El último edificio se recorta
- * al espacio restante; si ese resto no llega al mínimo, se suma al anterior, que entonces
- * puede superar `BUILD_W_MAX`. Es la lectura literal de la especificación.
+ * Widths accumulated until the canvas is covered (§7, step 3). The last building is
+ * trimmed to the remaining space; if that remainder is below the minimum it is added to
+ * the previous one, which may then exceed `BUILD_W_MAX`. That is the literal reading of
+ * the specification.
  */
 private fun buildingWidths(
     rng: Rng,
@@ -84,7 +85,7 @@ private fun buildingWidths(
     return widths.toIntArray()
 }
 
-/** Alturas según el perfil (§7, paso 4), con clamp final al rango del contrato. */
+/** Heights following the profile (§7, step 4), clamped to the contract range. */
 private fun buildingHeights(
     rng: Rng,
     mode: SkylineMode,
@@ -94,9 +95,9 @@ private fun buildingHeights(
     for (i in 0 until n) {
         val h =
             when (mode) {
-                SkylineMode.ALEATORIO -> rng.nextIntRange(G.BUILD_H_MIN, G.BUILD_H_MAX)
-                SkylineMode.ASCENDENTE -> ramp(i, n) + rng.nextIntRange(-HEIGHT_NOISE, HEIGHT_NOISE)
-                SkylineMode.DESCENDENTE -> ramp(n - 1 - i, n) + rng.nextIntRange(-HEIGHT_NOISE, HEIGHT_NOISE)
+                SkylineMode.RANDOM -> rng.nextIntRange(G.BUILD_H_MIN, G.BUILD_H_MAX)
+                SkylineMode.ASCENDING -> ramp(i, n) + rng.nextIntRange(-HEIGHT_NOISE, HEIGHT_NOISE)
+                SkylineMode.DESCENDING -> ramp(n - 1 - i, n) + rng.nextIntRange(-HEIGHT_NOISE, HEIGHT_NOISE)
             }
         heights[i] = h.coerceIn(G.BUILD_H_MIN, G.BUILD_H_MAX)
     }
@@ -112,7 +113,7 @@ private fun ramp(
     return (G.BUILD_H_MIN + t * (G.BUILD_H_MAX - G.BUILD_H_MIN)).toInt()
 }
 
-/** Número de ventanas que caben en una dimensión, con margen a ambos lados (D-07). */
+/** How many windows fit along one dimension, with a margin on both sides (D-07). */
 private fun gridCount(
     span: Int,
     cellSize: Int = WIN_W,
@@ -121,7 +122,7 @@ private fun gridCount(
     return if (usable <= 0) 0 else usable / (cellSize + WIN_GAP)
 }
 
-/** Vuelca edificios y ventanas sobre la máscara y la tabla de color (§7, paso 7). */
+/** Pours buildings and windows onto the mask and the colour table (§7, step 7). */
 private fun paint(
     width: Int,
     buildings: List<Building>,
@@ -178,13 +179,13 @@ private fun fillWindow(
 }
 
 /**
- * Gorilas en los edificios 1 y n-2 (§7, paso 8), desplazados hacia el centro si el
- * edificio es más estrecho que el propio gorila. Es el fallo clásico de este juego
- * (§17.4), así que el desplazamiento lleva test dedicado.
+ * Pandas on buildings 1 and n-2 (§7, step 8), shifted towards the centre if the
+ * building is narrower than the panda itself. That is the classic bug of this game
+ * (§17.4), so the shift has a dedicated test.
  */
-private fun placeGorillas(buildings: List<Building>): List<Gorilla> {
+private fun placePandas(buildings: List<Building>): List<Panda> {
     val n = buildings.size
-    val minWidth = G.GORILLA_W + GORILLA_CLEARANCE
+    val minWidth = G.PANDA_W + PANDA_CLEARANCE
 
     var left = 1
     while (left < n - 2 && buildings[left].width < minWidth) left++
@@ -192,10 +193,10 @@ private fun placeGorillas(buildings: List<Building>): List<Gorilla> {
     var right = n - 2
     while (right > left + 1 && buildings[right].width < minWidth) right--
 
-    check(left != right) { "los dos gorilas caerían en el mismo edificio" }
+    check(left != right) { "both pandas would land on the same building" }
 
     return listOf(
-        Gorilla(0, buildings[left].x + buildings[left].width / 2, buildings[left].roofY),
-        Gorilla(1, buildings[right].x + buildings[right].width / 2, buildings[right].roofY),
+        Panda(0, buildings[left].x + buildings[left].width / 2, buildings[left].roofY),
+        Panda(1, buildings[right].x + buildings[right].width / 2, buildings[right].roofY),
     )
 }

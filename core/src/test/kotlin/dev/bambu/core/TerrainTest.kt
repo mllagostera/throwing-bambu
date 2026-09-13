@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TerrainTest {
-    /** §15.6: `blast` borra exactamente el círculo, ni un píxel más. */
+    /** §15.6: `blast` clears exactly the circle, not one pixel more. */
     @Test
     fun blastClearsExactlyTheCircle() {
         val w = G.W_MIN
@@ -24,7 +24,7 @@ class TerrainTest {
                 val dy = y - cy
                 val inside = dx * dx + dy * dy <= r * r
                 assertEquals(
-                    "píxel ($x,$y) ${if (inside) "debería estar borrado" else "no debería tocarse"}",
+                    "pixel ($x,$y) ${if (inside) "should have been cleared" else "should not have been touched"}",
                     !inside,
                     terrain.solid(x, y),
                 )
@@ -60,6 +60,6 @@ class TerrainTest {
         val a = Terrain(w, BooleanArray(w * G.H) { true }, ByteArray(w * G.H), emptyList())
         val before = a.fingerprint()
         a.mask[1234] = false
-        assertTrue("la huella ignora cambios en la máscara", before != a.fingerprint())
+        assertTrue("fingerprint ignores mask changes", before != a.fingerprint())
     }
 }

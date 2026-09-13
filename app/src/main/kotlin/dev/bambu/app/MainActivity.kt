@@ -14,9 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 
 /**
- * Pantalla vacía del hito M0: solo verifica que el grafo de módulos se ensambla y
- * que la app arranca. La navegación real (`Menú → Modo → Ajustes → Juego → Resultado`)
- * entra en M2.
+ * Empty screen for milestone M0: it only proves that the module graph assembles and the
+ * app starts. The real navigation (`Menu → Mode → Setup → Game → Result`) lands in M2.
  */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

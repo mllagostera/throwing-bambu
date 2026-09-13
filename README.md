@@ -1,66 +1,66 @@
 # Throwing Bambu
 
-Juego de artillería por turnos para Android: dos gorilas, un skyline destructible y viento. Inspirado en las mecánicas del clásico género de artillería; **código y recursos originales**, sin nada portado de `GORILLA.BAS` (ver §18 de la especificación).
+A turn-based artillery game for Android: two pandas, a destructible skyline and wind. Inspired by the mechanics of the classic artillery genre; **original code and assets**, with nothing ported from `GORILLA.BAS` (see §18 of the specification).
 
-## Documentación
+## Documentation
 
-| Documento | Contenido |
+| Document | Contents |
 |---|---|
-| [`docs/ESPEC_DESARROLLO.md`](docs/ESPEC_DESARROLLO.md) | **Contrato** técnico: constantes, firmas, protocolo, tests obligatorios. Se cambia aquí antes que en el código. |
-| [`docs/PLAN_DESARROLLO.md`](docs/PLAN_DESARROLLO.md) | **Plan de ejecución**: decisiones previas, desglose en tareas, hitos M0–M7, trazabilidad de tests, riesgos. |
+| [`AGENTS.md`](AGENTS.md) | Rules for anyone — human or agent — working in this repository. |
+| [`docs/DEVELOPMENT_SPEC.md`](docs/DEVELOPMENT_SPEC.md) | The technical **contract**: constants, signatures, protocol, mandatory tests. Changed here before it is changed in code. |
+| [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) | The **execution plan**: prior decisions, task breakdown, milestones M0–M7, test traceability, risks. |
+| [`docs/SPRITE_SPEC.md`](docs/SPRITE_SPEC.md) | The original art brief. Not edited — see AGENTS.md. |
+| [`art/README.md`](art/README.md) | Art delivery notes: inventory, format and every divergence from the brief. |
 
-## Estado
+## Status
 
-**M1 completado**: núcleo determinista en `:core` — RNG xorshift64\*, tablas trigonométricas, generación de escenario, física con muestreo de segmento y 34 tests, incluidos los nueve obligatorios del §15. Siguiente hito: **M2** (render geométrico y partida local a dos jugadores).
+**M1 complete**: the deterministic core in `:core` — xorshift64\* RNG, trigonometric tables, scenario generation, physics with segment sampling, and 38 tests including the nine mandatory ones from §15. The art pipeline is delivered and the engine's palette is tied to it by a test. Next milestone: **M2** (geometric rendering and a local two-player match).
 
-## Construir y probar
+## Architecture
 
-```bash
-./gradlew build test        # build completo (requiere SDK de Android)
-./gradlew ktlintCheck detekt
-./gradlew ktlintFormat      # autocorrección de estilo
+```
+core/       Plain Kotlin JVM — physics, deterministic RNG, scenario, AI, match engine. No Android.
+transport/  Android — Nearby Connections, RFCOMM and loopback behind one interface.
+app/        Android — Compose, whole-pixel rendering, audio, navigation.
+art/, tools/  The art pipeline. See AGENTS.md before touching it.
 ```
 
-`:core` es Kotlin JVM puro y **no necesita el SDK de Android**. Para trabajar solo el núcleo —física, RNG, escenario, IA— en una máquina sin SDK:
+Three modes (one player, two local, Bluetooth) share a single match loop; only the source of each shot changes.
+
+## Build and test
+
+```bash
+./gradlew build test        # full build (needs the Android SDK)
+./gradlew ktlintCheck detekt
+./gradlew ktlintFormat      # style autofix
+```
+
+`:core` is plain Kotlin JVM and **does not need the Android SDK**. To work on the engine alone — physics, RNG, scenario, AI — on a machine without one:
 
 ```bash
 ./gradlew -PcoreOnly :core:test
 ```
 
-Requisitos: JDK 17 o superior. La versión de Gradle la fija el wrapper.
+Requirements: JDK 17 or newer. The Gradle version is pinned by the wrapper.
 
 ## APK
 
-Cada push genera un APK de depuración, **solo si los tests y el análisis estático pasan**. Se descarga desde la pestaña *Actions* → la ejecución correspondiente → artefacto **`apk-debug`**, con el nombre `throwing-bambu-<versión>-debug-<sha>.apk`. Se conserva 14 días.
+Every push builds a debug APK, **only if the tests and static analysis pass**. Download it from *Actions* → the run → the **`apk-debug`** artifact, named `throwing-bambu-<version>-debug-<sha>.apk`. Kept for 14 days.
 
-Va firmado con la clave de depuración de Android, así que se instala tal cual:
+It is signed with Android's debug key, so it installs as is:
 
 ```bash
 adb install throwing-bambu-0.1.0-debug-<sha>.apk
 ```
 
-En el móvil hay que permitir la instalación de orígenes desconocidos para la app desde la que se abra el fichero.
-
-Para generarlo en local:
+To build one locally:
 
 ```bash
 ./gradlew :app:assembleDebug   # app/build/outputs/apk/debug/app-debug.apk
 ```
 
-El APK de **release** requiere un keystore propio y no se genera todavía: entra en M7 junto con R8 y la configuración de firma (T-52 del plan).
-
-## Arquitectura prevista
-
-```
-core/       Kotlin JVM puro — física, RNG determinista, escenario, IA, motor de partida. Sin Android.
-transport/  Android — Nearby Connections, RFCOMM y loopback tras una interfaz común.
-app/        Android — Compose, render de píxel entero, audio, navegación.
-```
-
-Tres modos (un jugador, dos en local, Bluetooth) comparten un único bucle de partida; solo cambia el origen de cada disparo.
+The **release** APK needs its own keystore and is not built yet: it arrives in M7 together with R8 and the signing configuration (T-52 in the plan).
 
 ## Legal
 
-Código y recursos originales, bajo licencia MIT (ver [`LICENSE`](LICENSE)). Este proyecto **no** porta código de `GORILLA.BAS` ni reutiliza sus recursos, que son propiedad de Microsoft: las mecánicas de juego no son protegibles, pero el código y los assets sí. El título es propio.
-
-> La elección de MIT es una asunción de M0; si prefieres otra licencia, es el momento de cambiarla — antes de que haya contribuciones externas.
+Original code and assets, under the MIT licence (see [`LICENSE`](LICENSE)). This project does **not** port code from `GORILLA.BAS` and does not reuse its assets, which belong to Microsoft: game mechanics are not protectable, but code and assets are. The title and the theme are our own.

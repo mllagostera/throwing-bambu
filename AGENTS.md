@@ -8,8 +8,10 @@ Instructions for coding agents working in this repository.
 pandas throwing bamboo canes instead of gorillas throwing bananas. Neither the
 name nor the assets of the original may be reused; they belong to Microsoft.
 
-Right now the repository contains **only the art pipeline**. There is no Android
-module, no Gradle build and no engine yet. Do not assume one exists.
+The repository holds the art pipeline **and** the engine. `core` (plain Kotlin JVM,
+no Android) carries the deterministic RNG, scenario generation and physics, with
+`transport` and `app` still skeletons. `docs/DEVELOPMENT_SPEC.md` is the engineering
+contract and `docs/DEVELOPMENT_PLAN.md` tracks what is built and what is next.
 
 ## Language
 
@@ -30,6 +32,12 @@ Do not introduce Spanish, even when the conversation with the user is in Spanish
 
 ```
 AGENTS.md              This file.
+core/                  The engine. Plain Kotlin JVM, no Android — see golden rule §0.1
+                       of the development spec. This is where determinism lives.
+transport/             Android library: connectivity behind one interface. Skeleton.
+app/                   Android app: Compose, rendering, navigation. Skeleton.
+docs/DEVELOPMENT_SPEC.md  Engineering contract: constants, signatures, protocol, tests.
+docs/DEVELOPMENT_PLAN.md  Execution plan: decisions, tasks, milestones, risks.
 docs/SPRITE_SPEC.md    The original art brief. See "Do not edit" below.
 art/README.md          Delivery notes: inventory, format, and every divergence
                        from the brief with its reason.
@@ -107,9 +115,19 @@ it is the record of what was asked for. Divergences from it belong in
 `art/README.md`, never as edits to the spec. If the user wants a living spec that
 describes the delivery instead, that is their call to make explicitly.
 
-## When the Android module lands
+## The engine
 
-The sprites go to `app/src/main/assets/sprites/`, **not** `res/drawable*/`: the
-resource system applies density scaling and would destroy the nearest-neighbour
-look. Load with `BitmapFactory.Options(inScaled = false)` and paint with
-`isFilterBitmap = false` and `isAntiAlias = false`.
+`./gradlew build test` builds everything and runs the tests; `./gradlew -PcoreOnly
+:core:test` runs the engine alone, without needing the Android SDK. CI also runs
+`:core:test` on macOS, because determinism cannot be verified on a single JVM, and
+publishes a debug APK when everything is green.
+
+Constants and signatures in `core` are contract: change `docs/DEVELOPMENT_SPEC.md`
+first, in the same commit. The engine's palette is derived from the delivered art and
+`PaletteMatchesArtTest` fails if the two drift apart — if you regenerate the art with
+different colours, update the palette rather than the test.
+
+Sprites go to `app/src/main/assets/sprites/`, **not** `res/drawable*/`: the resource
+system applies density scaling and would destroy the nearest-neighbour look. Load with
+`BitmapFactory.Options(inScaled = false)` and paint with `isFilterBitmap = false` and
+`isAntiAlias = false`.

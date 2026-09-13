@@ -2,10 +2,10 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
 }
 
-// Regla de oro §0.1: este módulo es Kotlin JVM puro. No hay SDK de Android en el
-// classpath, así que un `import android.*` ni siquiera compila. El test de
-// arquitectura NoAndroidDependenciesTest cubre el caso indirecto (dependencia
-// transitiva que arrastre clases de Android).
+// Golden rule §0.1: this module is plain Kotlin JVM. There is no Android SDK on the
+// classpath, so an `import android.*` does not even compile. The architecture test
+// NoAndroidDependenciesTest covers the indirect case (a transitive dependency that
+// drags Android classes in).
 
 kotlin {
     compilerOptions {
@@ -29,7 +29,7 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
     useJUnit()
-    // Los tests de evaluación de la IA (M3) son largos y no entran en el CI por defecto.
+    // The AI evaluation tests (M3) are long and stay out of CI by default.
     if (!project.hasProperty("runSlowTests")) {
         exclude("**/slow/**")
     }

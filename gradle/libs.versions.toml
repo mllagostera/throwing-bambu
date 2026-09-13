@@ -1,5 +1,5 @@
-# Única fuente de verdad de versiones (§1 de la especificación).
-# Regla: ninguna versión literal en un build.gradle.kts.
+# Single source of truth for versions (§1 of the specification).
+# Rule: no literal version in any build.gradle.kts.
 
 [versions]
 agp = "8.7.3"

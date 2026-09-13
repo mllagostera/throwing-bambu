@@ -1,27 +1,27 @@
 package dev.bambu.core
 
 /**
- * Escenarios sintéticos para los tests de física.
+ * Synthetic scenarios for the physics tests.
  *
- * El oponente se crea con `alive = false` a propósito: en las pruebas balísticas
- * interesa medir la trayectoria sin que un AABB en mitad del vuelo la corte.
+ * The opponent is created with `alive = false` on purpose: ballistic tests measure the
+ * trajectory, and a hitbox sitting in the middle of the flight would cut it short.
  */
 object TestScenarios {
     const val FLAT_WIDTH = 460
     const val ROOF_Y = 150
     const val SHOOTER_X = 60
 
-    /** Altura del punto de lanzamiento del tirador 0. */
+    /** Height of player 0's throwing point. */
     const val LAUNCH_Y = ROOF_Y - G.HAND_DY
 
-    /** Lienzo sin un solo píxel sólido: balística pura. */
+    /** A canvas without a single solid pixel: pure ballistics. */
     fun empty(
         opponentX: Int = 440,
         opponentAlive: Boolean = false,
         shooterRoofY: Int = ROOF_Y,
     ): Scenario = withMask(BooleanArray(FLAT_WIDTH * G.H), opponentX, opponentAlive, shooterRoofY)
 
-    /** Lienzo vacío salvo una losa horizontal de un píxel de grosor. */
+    /** Empty canvas except for a one-pixel-thick horizontal slab. */
     fun withSlab(
         slabY: Int,
         shooterRoofY: Int = ROOF_Y,
@@ -41,18 +41,18 @@ object TestScenarios {
         return Scenario(
             width = FLAT_WIDTH,
             terrain = terrain,
-            gorillas =
+            pandas =
                 listOf(
-                    Gorilla(0, SHOOTER_X, shooterRoofY),
-                    Gorilla(1, opponentX, ROOF_Y, alive = opponentAlive),
+                    Panda(0, SHOOTER_X, shooterRoofY),
+                    Panda(1, opponentX, ROOF_Y, alive = opponentAlive),
                 ),
             sunX = FLAT_WIDTH / 2,
         )
     }
 
     /**
-     * Alcance horizontal hasta volver a la altura de lanzamiento, leído de la trayectoria.
-     * Devuelve -1 si el proyectil nunca vuelve a bajar hasta ahí.
+     * Horizontal range until the cane falls back to the throwing height, read off the
+     * trajectory. Returns -1 if it never comes back down that far.
      */
     fun rangeAtLaunchHeight(
         result: ShotResult,

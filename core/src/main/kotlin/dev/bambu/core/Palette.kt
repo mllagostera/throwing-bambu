@@ -1,39 +1,39 @@
 package dev.bambu.core
 
 /**
- * Paleta cerrada EGA-16 y colores derivados del arte entregado (`art/`).
+ * Closed EGA-16 palette and the colours derived from the delivered art (`art/`).
  *
- * Vive en `core` como enteros ARGB: son datos, no recursos de Android, y el generador
- * de escenario necesita saber cuántas fachadas hay.
+ * It lives in `core` as ARGB integers: they are data, not Android resources, and the
+ * scenario generator needs to know how many facades there are.
  *
- * Los valores **no se inventan aquí**: salen de `art/palette/ega16.gpl` (el orden de
- * los índices es normativo), de los cuatro píxeles clave de cada celda de
- * `art/sprites/facades.png` y de `art/sky.txt`. Si el arte se regenera y cambian,
- * cambian aquí.
+ * The values are **not invented here**: they come from `art/palette/ega16.gpl` (the
+ * index order is normative), from the four key pixels of each cell of
+ * `art/sprites/facades.png`, and from `art/sky.txt`. If the art is regenerated and they
+ * change, they change here.
  */
 object Palette {
-    /** Los 16 colores EGA en el orden normativo de `art/palette/ega16.gpl`. */
+    /** The 16 EGA colours in the normative order of `art/palette/ega16.gpl`. */
     val EGA =
         intArrayOf(
-            0xFF000000.toInt(), // 0 negro
-            0xFF0000AA.toInt(), // 1 azul
-            0xFF00AA00.toInt(), // 2 verde
-            0xFF00AAAA.toInt(), // 3 cian
-            0xFFAA0000.toInt(), // 4 rojo
+            0xFF000000.toInt(), // 0 black
+            0xFF0000AA.toInt(), // 1 blue
+            0xFF00AA00.toInt(), // 2 green
+            0xFF00AAAA.toInt(), // 3 cyan
+            0xFFAA0000.toInt(), // 4 red
             0xFFAA00AA.toInt(), // 5 magenta
-            0xFFAA5500.toInt(), // 6 marrón
-            0xFFAAAAAA.toInt(), // 7 gris claro
-            0xFF555555.toInt(), // 8 gris oscuro
-            0xFF5555FF.toInt(), // 9 azul claro
-            0xFF55FF55.toInt(), // 10 verde claro
-            0xFF55FFFF.toInt(), // 11 cian claro
-            0xFFFF5555.toInt(), // 12 rojo claro
-            0xFFFF55FF.toInt(), // 13 magenta claro
-            0xFFFFFF55.toInt(), // 14 amarillo
-            0xFFFFFFFF.toInt(), // 15 blanco
+            0xFFAA5500.toInt(), // 6 brown
+            0xFFAAAAAA.toInt(), // 7 light grey
+            0xFF555555.toInt(), // 8 dark grey
+            0xFF5555FF.toInt(), // 9 light blue
+            0xFF55FF55.toInt(), // 10 light green
+            0xFF55FFFF.toInt(), // 11 light cyan
+            0xFFFF5555.toInt(), // 12 light red
+            0xFFFF55FF.toInt(), // 13 light magenta
+            0xFFFFFF55.toInt(), // 14 yellow
+            0xFFFFFFFF.toInt(), // 15 white
         )
 
-    // Índices EGA con nombre, para no repetir números sueltos.
+    // Named EGA indices, so loose numbers do not spread through the code.
     const val BLACK: Byte = 0
     const val BLUE: Byte = 1
     const val CYAN: Byte = 3
@@ -45,21 +45,21 @@ object Palette {
     const val YELLOW: Byte = 14
 
     /**
-     * Valor de [Terrain.color] allí donde no hay terreno. No es un color: el render
-     * pinta el degradado del cielo en esos píxeles.
+     * Value of [Terrain.color] where there is no terrain. It is not a colour: the
+     * renderer paints the sky gradient on those pixels.
      */
     const val EMPTY: Byte = -1
 
-    /** Degradado del cielo (`art/sky.txt`); el motor interpola entre los dos. */
+    /** Sky gradient (`art/sky.txt`); the engine interpolates between the two. */
     val SKY_TOP = EGA[BLUE.toInt()]
     val SKY_BOTTOM = EGA[LIGHT_BLUE.toInt()]
 
     /**
-     * Una variante de fachada, tal y como la codifica `facades.png` en los píxeles
-     * (0,0) a (3,0) de cada celda de 16×16.
+     * One facade variant, as `facades.png` encodes it in pixels (0,0) to (3,0) of each
+     * 16×16 cell.
      *
-     * [outline] todavía no lo usa el generador: el §7 pinta base y ventanas. Queda
-     * disponible para el borde de los edificios cuando entre el render de M4.
+     * [outline] is not used by the generator yet: §7 paints base and windows. It is
+     * here for the building edges when the M4 renderer arrives.
      */
     data class Facade(
         val base: Byte,
@@ -69,11 +69,11 @@ object Palette {
     )
 
     /**
-     * Las cinco fachadas entregadas. **Cinco, no seis**: el número salió del arte, no
-     * de una estimación, y cambiarlo altera el consumo del RNG en `ScenarioGen`.
+     * The five delivered facades. **Five, not six**: the number comes from the art, not
+     * from a guess, and changing it alters how much the RNG consumes in `ScenarioGen`.
      *
-     * Ninguna base es verde (se tragaría la caña de bambú) ni blanca (se tragaría al
-     * panda); `tools/verify_assets.py` lo comprueba en cada regeneración.
+     * No base is green (it would swallow the bamboo cane) or white (it would swallow
+     * the panda); `tools/verify_assets.py` checks that on every regeneration.
      */
     val FACADES =
         arrayOf(
@@ -86,6 +86,6 @@ object Palette {
 
     val N_FACADES = FACADES.size
 
-    /** Color ARGB de un índice de [Terrain.color]. */
+    /** ARGB colour for an index of [Terrain.color]. */
     fun argb(index: Byte): Int = EGA[index.toInt()]
 }

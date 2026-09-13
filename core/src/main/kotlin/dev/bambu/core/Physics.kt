@@ -2,14 +2,14 @@ package dev.bambu.core
 
 import kotlin.math.abs
 
-/** Margen fuera del lienzo tras el cual el proyectil se da por perdido (§8). */
+/** Margin outside the canvas past which the cane is considered lost (§8). */
 private const val OFFSCREEN_MARGIN = 20
 
 /**
- * Simula un disparo completo (§8). Función pura: no dibuja, no anima y **no muta el
- * terreno** — el cráter lo aplica el llamador.
+ * Simulates a complete shot (§8). Pure function: it does not draw, does not animate and
+ * **does not mutate the terrain** — the caller applies the crater.
  *
- * Devuelve un `path` propio, recortado a `steps * 2`.
+ * Returns an owned `path`, trimmed to `steps * 2`.
  */
 fun simulate(
     scenario: Scenario,
@@ -30,11 +30,11 @@ fun simulate(
 }
 
 /**
- * Igual que [simulate] pero escribiendo en un búfer prestado, sin asignar nada.
+ * Same as [simulate] but writing into a borrowed buffer, allocating nothing.
  *
- * El `path` del resultado apunta a `scratch`: solo es válido hasta la siguiente llamada.
- * Está pensado para la búsqueda de la IA, que descarta cada trayectoria. **Nunca** debe
- * publicarse en un `MatchEvent` (D-01).
+ * The result's `path` points at `scratch`: it is only valid until the next call. It
+ * exists for the AI search, which discards every trajectory. It must **never** be
+ * published in a `MatchEvent` (D-01).
  */
 @Suppress("CyclomaticComplexMethod", "ReturnCount")
 fun simulateInto(
@@ -44,12 +44,12 @@ fun simulateInto(
     wind: Int,
     scratch: FloatArray,
 ): ShotResult {
-    require(shot.angle in G.ANGLE_MIN..G.ANGLE_MAX) { "ángulo fuera de rango: ${shot.angle}" }
-    require(shot.power in G.POWER_MIN..G.POWER_MAX) { "potencia fuera de rango: ${shot.power}" }
-    require(scratch.size >= G.MAX_STEPS * 2) { "scratch demasiado pequeño: ${scratch.size}" }
+    require(shot.angle in G.ANGLE_MIN..G.ANGLE_MAX) { "angle out of range: ${shot.angle}" }
+    require(shot.power in G.POWER_MIN..G.POWER_MAX) { "power out of range: ${shot.power}" }
+    require(scratch.size >= G.MAX_STEPS * 2) { "scratch too small: ${scratch.size}" }
 
     val dir = if (shooter == 0) 1 else -1
-    val me = scenario.gorillas[shooter]
+    val me = scenario.pandas[shooter]
     val opponent = 1 - shooter
     val terrain = scenario.terrain
     val hit = IntArray(2)
@@ -58,7 +58,7 @@ fun simulateInto(
     var y = (me.roofY - G.HAND_DY).toFloat()
     val speed = shot.power * G.POWER_TO_SPEED
     var vx = dir * COS[shot.angle] * speed
-    var vy = -SIN[shot.angle] * speed // y crece hacia abajo
+    var vy = -SIN[shot.angle] * speed // y grows downwards
     val windA = wind * G.WIND_ACCEL
     var sunHit = false
 
@@ -78,19 +78,20 @@ fun simulateInto(
         if (x < -OFFSCREEN_MARGIN || x > scenario.width + OFFSCREEN_MARGIN || y > G.H) {
             return ShotResult(scratch, steps, Outcome.OffScreen, x.toInt(), y.toInt(), sunHit)
         }
-        // El cielo está abierto por arriba: el proyectil puede salir y volver.
+        // The sky is open above: the cane may leave and come back.
         if (y < 0f) continue
 
-        // El sol no frena el plátano: solo cambia de expresión. Es un detalle del original.
+        // The sun does not slow the cane down: it only changes expression. It is a
+        // detail of the original.
         if (hitsSun(scenario, x, y)) sunHit = true
 
-        if (hitsGorilla(scenario.gorillas[opponent], x, y)) {
-            return ShotResult(scratch, steps, Outcome.HitGorilla(opponent), x.toInt(), y.toInt(), sunHit)
+        if (hitsPanda(scenario.pandas[opponent], x, y)) {
+            return ShotResult(scratch, steps, Outcome.HitPanda(opponent), x.toInt(), y.toInt(), sunHit)
         }
-        // El autogol es legal, pero el punto de lanzamiento cae dentro del AABB propio:
-        // sin estos pasos de gracia todo disparo terminaría en el paso 1.
-        if (step >= G.SELF_HIT_GRACE_STEPS && hitsGorilla(me, x, y)) {
-            return ShotResult(scratch, steps, Outcome.HitGorilla(shooter), x.toInt(), y.toInt(), sunHit)
+        // Own goals are legal, but the throwing point sits inside the thrower's own
+        // box: without these grace steps every shot would end on step 1.
+        if (step >= G.SELF_HIT_GRACE_STEPS && hitsPanda(me, x, y)) {
+            return ShotResult(scratch, steps, Outcome.HitPanda(shooter), x.toInt(), y.toInt(), sunHit)
         }
 
         if (terrain.firstSolidOnSegment(prevX, prevY, x, y, hit)) {
@@ -101,17 +102,17 @@ fun simulateInto(
     return ShotResult(scratch, G.MAX_STEPS, Outcome.TimeOut, x.toInt(), y.toInt(), sunHit)
 }
 
-/** AABB del gorila centrado en `(x, roofY - GORILLA_H/2)`, expandido por el radio del plátano. */
-private fun hitsGorilla(
-    g: Gorilla,
+/** Panda AABB centred on `(x, roofY - PANDA_H/2)`, expanded by the cane radius. */
+private fun hitsPanda(
+    p: Panda,
     x: Float,
     y: Float,
 ): Boolean {
-    if (!g.alive) return false
-    val halfW = G.GORILLA_W / 2 + G.BANANA_R
-    val halfH = G.GORILLA_H / 2 + G.BANANA_R
-    val cy = g.roofY - G.GORILLA_H / 2
-    return abs(x - g.x) <= halfW && abs(y - cy) <= halfH
+    if (!p.alive) return false
+    val halfW = G.PANDA_W / 2 + G.CANE_R
+    val halfH = G.PANDA_H / 2 + G.CANE_R
+    val cy = p.roofY - G.PANDA_H / 2
+    return abs(x - p.x) <= halfW && abs(y - cy) <= halfH
 }
 
 private fun hitsSun(
@@ -119,6 +120,6 @@ private fun hitsSun(
     x: Float,
     y: Float,
 ): Boolean {
-    val halfW = G.SUN_W / 2 + G.BANANA_R
-    return abs(x - scenario.sunX) <= halfW && y <= G.SUN_H + G.BANANA_R
+    val halfW = G.SUN_W / 2 + G.CANE_R
+    return abs(x - scenario.sunX) <= halfW && y <= G.SUN_H + G.CANE_R
 }

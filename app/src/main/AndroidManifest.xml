@@ -7,7 +7,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ThrowingBambu">
 
-        <!-- D-04: el lienzo lógico solo tiene sentido en apaisado. -->
+        <!-- D-04: the logical canvas only makes sense in landscape. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

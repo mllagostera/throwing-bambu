@@ -3,22 +3,22 @@ package dev.bambu.core
 import kotlin.math.abs
 
 /**
- * Un edificio del skyline.
+ * One building of the skyline.
  *
- * No es `data class` a propósito (D-06): con un array dentro, `equals` compararía por
- * identidad y los tests de determinismo pasarían o fallarían por el motivo equivocado.
+ * Deliberately not a `data class` (D-06): with an array inside, `equals` would compare
+ * by identity and the determinism tests would pass or fail for the wrong reason.
  */
 class Building(
     val x: Int,
     val width: Int,
     val height: Int,
     val paletteIdx: Int,
-    /** Ventanas encendidas/apagadas, orden fila-mayor de arriba abajo. */
+    /** Windows lit/unlit, row-major from the top. */
     val windows: BooleanArray,
-    /** Columnas de la rejilla de ventanas; `windows.size == rows * cols`. */
+    /** Columns of the window grid; `windows.size == rows * cols`. */
     val windowCols: Int,
 ) {
-    /** Píxel del tejado: donde apoyan los pies del gorila. */
+    /** Roof pixel: where the panda's feet rest. */
     val roofY: Int get() = G.H - height
 
     override fun equals(other: Any?): Boolean =
@@ -42,25 +42,25 @@ class Building(
 }
 
 /**
- * Terreno destructible: una máscara de sólidos y un índice de paleta por píxel.
+ * Destructible terrain: a mask of solid pixels and one palette index per pixel.
  *
- * El origen está arriba a la izquierda y la `y` crece hacia abajo, como en el lienzo.
+ * The origin is top-left and `y` grows downwards, like the canvas.
  */
 class Terrain(
     val width: Int,
-    /** `width * G.H`, `true` = sólido. */
+    /** `width * G.H`, `true` = solid. */
     val mask: BooleanArray,
-    /** `width * G.H`, índice EGA por píxel; [Palette.EMPTY] donde no hay terreno. */
+    /** `width * G.H`, EGA index per pixel; [Palette.EMPTY] where there is no terrain. */
     val color: ByteArray,
     val buildings: List<Building>,
 ) {
-    /** Fuera del lienzo no hay nada sólido: el cielo está abierto por los lados y por arriba. */
+    /** Nothing is solid outside the canvas: the sky is open at the sides and above. */
     fun solid(
         x: Int,
         y: Int,
     ): Boolean = x >= 0 && x < width && y >= 0 && y < G.H && mask[y * width + x]
 
-    /** Abre un cráter circular. La física nunca llama a esto: solo el motor de partida. */
+    /** Opens a circular crater. Physics never calls this: only the match engine does. */
     fun blast(
         cx: Int,
         cy: Int,
@@ -83,11 +83,13 @@ class Terrain(
     }
 
     /**
-     * Primer píxel sólido del segmento `(x0,y0) → (x1,y1)`, recorrido con DDA entero (D-03).
+     * First solid pixel along the segment `(x0,y0) → (x1,y1)`, walked with an integer
+     * DDA (D-03).
      *
-     * Muestrear solo el extremo del paso no basta: el avance real llega a 2,5 px y el
-     * terreno, tras varios cráteres, deja istmos de 1–2 px que el plátano atravesaría.
-     * Devuelve `true` y escribe el píxel en [out]; `false` si el segmento está despejado.
+     * Sampling only the end of the step is not enough: the real advance reaches 2.5 px
+     * and the terrain, after a few craters, leaves 1–2 px isthmuses the cane would fly
+     * straight through. Returns `true` and writes the pixel into [out]; `false` if the
+     * segment is clear.
      */
     fun firstSolidOnSegment(
         x0: Float,
@@ -127,9 +129,9 @@ class Terrain(
     }
 
     /**
-     * Huella FNV-1a de 64 bits sobre máscara y color. Es lo que comparan los tests de
-     * determinismo: comparar objetos no sirve, y volcar dos arrays de 92 000 elementos
-     * en cada aserción tampoco.
+     * FNV-1a 64-bit fingerprint over mask and colour. This is what the determinism
+     * tests compare: comparing objects is useless, and dumping two 92 000-element
+     * arrays on every assertion is worse.
      */
     fun fingerprint(): Long {
         var h = FNV_OFFSET_BASIS
@@ -146,8 +148,8 @@ class Terrain(
     }
 }
 
-/** `x` es el centro horizontal; `roofY`, el píxel del tejado donde apoya los pies. */
-data class Gorilla(
+/** `x` is the horizontal centre; `roofY`, the roof pixel the feet rest on. */
+data class Panda(
     val player: Int,
     val x: Int,
     val roofY: Int,
@@ -157,11 +159,11 @@ data class Gorilla(
 data class Scenario(
     val width: Int,
     val terrain: Terrain,
-    val gorillas: List<Gorilla>,
+    val pandas: List<Panda>,
     val sunX: Int,
 )
 
-/** `angle` en 0..90 grados, `power` en 1..100. `turn` es el contador global de la partida. */
+/** `angle` in 0..90 degrees, `power` in 1..100. `turn` is the match-wide counter. */
 data class Shot(
     val turn: Int,
     val angle: Int,
@@ -169,14 +171,13 @@ data class Shot(
 )
 
 /**
- * Cómo termina un vuelo.
+ * How a flight ends.
  *
- * No existe `HitSun` (D-02): el sol cambia de expresión pero no detiene el proyectil,
- * así que ese resultado sería inalcanzable. El impacto en el sol viaja en
- * [ShotResult.sunHit].
+ * There is no `HitSun` (D-02): the sun changes expression but does not stop the cane,
+ * so that outcome would be unreachable. Hitting the sun travels in [ShotResult.sunHit].
  */
 sealed interface Outcome {
-    data class HitGorilla(
+    data class HitPanda(
         val player: Int,
     ) : Outcome
 
@@ -191,15 +192,15 @@ sealed interface Outcome {
 }
 
 /**
- * Trayectoria y desenlace de un disparo.
+ * Trajectory and outcome of one shot.
  *
- * El `path` que publica el motor de partida es propio y está recortado a `steps * 2`
- * (D-01): la UI lo anima durante segundos mientras la IA lanza cientos de simulaciones,
- * y un búfer compartido se sobrescribiría a mitad de animación. Solo
- * [simulateInto] devuelve un `path` prestado.
+ * The `path` published by the match engine is owned and trimmed to `steps * 2` (D-01):
+ * the UI animates it for seconds while the AI runs hundreds of simulations, and a
+ * shared buffer would be overwritten mid-animation. Only [simulateInto] returns a
+ * borrowed `path`.
  */
 class ShotResult(
-    /** Pares x,y intercalados: `path[2i]`, `path[2i+1]`. */
+    /** Interleaved x,y pairs: `path[2i]`, `path[2i+1]`. */
     val path: FloatArray,
     val steps: Int,
     val outcome: Outcome,

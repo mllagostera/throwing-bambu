@@ -1,11 +1,11 @@
 package dev.bambu.core
 
 /**
- * Generador determinista xorshift64\* (§4).
+ * Deterministic xorshift64\* generator (§4).
  *
- * No se usa `java.util.Random` ni `kotlin.random.Random`: ninguno garantiza la misma
- * secuencia entre versiones de plataforma, y toda la partida —escenario, viento y
- * ruido de la IA— depende de que dos dispositivos obtengan exactamente lo mismo.
+ * Neither `java.util.Random` nor `kotlin.random.Random` is used: neither guarantees the
+ * same sequence across platform versions, and the whole match — scenario, wind and the
+ * AI's noise — depends on two devices getting byte-for-byte the same values.
  */
 class Rng(
     seed: Long,
@@ -19,24 +19,24 @@ class Rng(
         return s * -0x7ea3_5b2f_1c0d_49a7L
     }
 
-    /** Entero en `0 until bound`. */
+    /** Integer in `0 until bound`. */
     fun nextInt(bound: Int): Int = ((nextLong() ushr 1) % bound).toInt()
 
-    /** Entero en `a..b`, ambos incluidos. */
+    /** Integer in `a..b`, both included. */
     fun nextIntRange(
         a: Int,
         b: Int,
     ): Int = a + nextInt(b - a + 1)
 
-    /** Float en `[0, 1)` con 24 bits de precisión, exactos en binario. */
+    /** Float in `[0, 1)` with 24 bits of precision, exact in binary. */
     fun nextFloat(): Float = ((nextLong() ushr 40) / 16777216f)
 
     /**
-     * Normal estándar por Box-Muller.
+     * Standard normal via Box-Muller.
      *
-     * `u1` se remuestrea mientras sea 0: `ln(0)` da infinito y el disparo de la IA
-     * saldría con un ángulo NaN. Ocurre 1 de cada 16,7 M llamadas, que con dos por
-     * turno es raro pero no imposible, y sería un fallo muy difícil de diagnosticar.
+     * `u1` is resampled while it is zero: `ln(0)` is infinite and the AI's shot would
+     * come out with a NaN angle. It happens once every 16.7 M calls, which at two per
+     * turn is rare but not impossible, and it would be a miserable bug to diagnose.
      */
     fun nextGaussian(): Float {
         var u1 = nextFloat()
@@ -50,10 +50,10 @@ class Rng(
 }
 
 /**
- * Viento del turno (§4). Derivado de la semilla, nunca transmitido: ambos dispositivos
- * lo calculan y desaparece una clase entera de bugs de sincronización.
+ * Wind for a turn (§4). Derived from the seed, never transmitted: both devices compute
+ * it and a whole class of synchronisation bugs disappears.
  *
- * `turn` es el contador global de la partida, no el de la ronda.
+ * `turn` is the match-wide counter, not the one within a round.
  */
 fun windForTurn(
     seed: Long,
