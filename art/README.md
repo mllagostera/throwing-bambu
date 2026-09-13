@@ -1,173 +1,175 @@
-# Arte — entrega de sprites
+# Art — sprite delivery
 
-Producción de las piezas descritas en `docs/ESPEC_SPRITES.md`. Todo está a **1×**:
-ningún fichero se entrega escalado, porque el motor escala por enteros con vecino
-más próximo en tiempo de ejecución.
+Production of the pieces described in `docs/SPRITE_SPEC.md`. Everything is at
+**1×**: no file is delivered scaled, because the engine scales by integers with
+nearest-neighbour at runtime.
 
-## Cambio de tema: pandas y bambú
+## Theme change: pandas and bamboo
 
-El briefing describe gorilas que lanzan plátanos. Lo entregado son **pandas que
-lanzan cañas de bambú**, que es lo que dice el nombre del proyecto. El contrato
-técnico con el motor no cambia: mismas celdas, mismos pivotes, mismo número y
-orden de fotogramas, mismos nombres de pose. Cambian el personaje, el proyectil
-y, con ellos, dos restricciones de legibilidad que el briefing había fijado
-alrededor del color del plátano:
+The brief describes gorillas throwing bananas. What is delivered is **pandas
+throwing bamboo canes**, which is what the project name says. The technical
+contract with the engine does not change: same cells, same pivots, same number
+and order of frames. The character, the projectile and — with them — two
+legibility constraints the brief had pinned to the banana's colour do change:
 
-| | Gorila + plátano | Panda + bambú |
+| | Gorilla + banana | Panda + bamboo |
 |---|---|---|
-| Personaje | gris claro (7) y gris oscuro (8) | blanco (15) y negro (0) |
-| Proyectil | amarillo (14) | verde claro (10) con nudos en verde (2) |
-| Base de fachada prohibida | amarillo | **verde** (se come la caña) y **blanco** (se come al panda) |
-| Ventana encendida | blanco en 3 de 5, para no tapar el plátano | **amarillo en las 5**, como la referencia del original |
+| Character | light grey (7) and dark grey (8) | white (15) and black (0) |
+| Projectile | yellow (14) | light green (10) with green (2) nodes |
+| Forbidden facade base | yellow | **green** (eats the cane) and **white** (eats the panda) |
+| Lit window | white in 3 of 5, to avoid hiding the banana | **yellow in all 5**, as the original's reference |
 
-El panda además se lee mejor que el gorila a esta escala, y no por casualidad: su
-identidad está en manchas de alto contraste —orejas, antifaces, banda del pecho,
-patas— y no en el volumen del pelaje, que a 20 px de alto no cabe.
+The panda also reads better than the gorilla at this size, and not by luck: its
+identity lives in high-contrast patches — ears, eye masks, chest band, legs — and
+not in the volume of the fur, which does not fit in 20 px of height.
 
-Ficheros renombrados: `gorila.png` → `panda.png`, `banana.png` → `bambu.png`,
-`paleta_gorilas.gpl` → `paleta_ega16.gpl` (la paleta es la EGA de 16 colores, no
-tiene nada de gorila, y el propio briefing pide no arrastrar el nombre del
-original de Microsoft). `docs/ESPEC_SPRITES.md` se deja **sin tocar**: es el
-documento de partida y el registro de lo que se pidió.
+Renamed files: `gorila.png` → `panda.png`, `banana.png` → `bamboo.png`,
+`paleta_gorilas.gpl` → `ega16.gpl` (the palette is the 16-colour EGA, it has
+nothing to do with gorillas, and the brief itself asks not to carry over the name
+of Microsoft's original). Frame names were translated along with the rest:
+`brazo_izq`/`brazo_der`/`pecho_1`/`pecho_2`/`muerto` →
+`arm_left`/`arm_right`/`chest_1`/`chest_2`/`defeated`.
 
-## Qué hay aquí
+`docs/SPRITE_SPEC.md` is an English translation of the original brief, kept
+**faithful to its content**: it is the starting document and the record of what
+was asked for. Every divergence from it lives here, not there.
+
+## What is here
 
 ```
 art/
-  palette/paleta_ega16.gpl        Entregable 0. Paleta EGA de 16 colores, orden normativo.
-  palette/paleta_ega16.png        Tira de 16×1 px con la paleta (una muestra por píxel).
-  palette/paleta_ega16_x16.png    La misma, ampliada, para mirarla.
-  cielo.txt                       Los dos colores del degradado que genera el motor.
-  sprites/*.png                   Las siete piezas del inventario.
-  preview/*_x6.png                Contactos ampliados, con los límites de celda marcados.
-  preview/escena_1x.png           Escena de juego montada a 1× con todas las piezas.
-  preview/escena_x3.png           La misma, ampliada.
+  palette/ega16.gpl          Deliverable 0. 16-colour EGA palette, normative order.
+  palette/ega16.png          16×1 px strip of the palette (one swatch per pixel).
+  palette/ega16_x16.png      The same, magnified, to actually look at.
+  sky.txt                    The two colours of the gradient the engine generates.
+  sprites/*.png              The seven pieces of the inventory.
+  preview/*_x6.png           Magnified contact sheets, with cell boundaries marked.
+  preview/scene_1x.png       A game scene assembled at 1× with every piece.
+  preview/scene_x3.png       The same, magnified.
 tools/
-  ega.py                          Paleta, lienzo y escritura de PNG.
-  art_*.py                        Una pieza por fichero: aquí vive el dibujo.
-  gen_sprites.py                  Genera art/ entero.
-  preview_escena.py               Monta la escena de prueba.
-  verify_assets.py                Comprueba los criterios de aceptación.
+  ega.py                     Palette, canvas and PNG writing.
+  art_*.py                   One piece per file: this is where the drawing lives.
+  gen_sprites.py             Generates the whole of art/.
+  preview_scene.py           Assembles the test scene.
+  verify_assets.py           Checks the acceptance criteria.
 ```
 
-## Reproducir y verificar
+## Reproduce and verify
 
 ```bash
 pip install pillow
-python3 tools/gen_sprites.py --zoom 6     # reescribe art/sprites y art/preview
-python3 tools/preview_escena.py           # reescribe art/preview/escena_*.png
-python3 tools/verify_assets.py            # sale con 1 si algo incumple la sección 12
+python3 tools/gen_sprites.py --zoom 6     # rewrites art/sprites and art/preview
+python3 tools/preview_scene.py            # rewrites art/preview/scene_*.png
+python3 tools/verify_assets.py            # exits 1 if anything breaks section 12
 ```
 
-`verify_assets.py` lee los PNG entregados, no los generadores, y comprueba pieza
-por pieza: solo colores de la paleta, máximo 16 distintos, ningún píxel con alfa
-entre 1 y 254, dimensiones de tira y celda exactas, el pivote donde lo declara el
-documento, la caja de colisión del panda, el radio del fotograma de pico de la
-explosión frente al cráter, los cuatro píxeles clave de cada fachada (ninguna base
-verde ni blanca) y el comportamiento del skyline recortado a 320, 360, 400 y
-460 px.
+`verify_assets.py` reads the delivered PNGs, not the generators, and checks piece
+by piece: palette colours only, at most 16 distinct, no pixel with an alpha
+between 1 and 254, exact strip and cell dimensions, the pivot where the document
+declares it, the panda's collision box, the radius of the explosion's peak frame
+against the crater, the four key pixels of each facade (no green base and no
+white one) and the skyline's behaviour cropped to 320, 360, 400 and 460 px.
 
-Estado actual: **todo correcto, 0 avisos**.
+Current status: **all good, 0 warnings**.
 
-## Formato
+## Format
 
-PNG-8 indexado (tipo de color 3, profundidad 8) con `tRNS`. La tabla tiene 17
-entradas: los 16 colores EGA en los índices 0–15 y el índice 16 como hueco
-totalmente transparente, pintado de magenta puro `#FF00FF` —que no pertenece a la
-EGA— para que un fallo de transparencia salte a la vista en lugar de disfrazarse
-de negro legítimo. Por construcción no puede existir un píxel con alfa intermedio.
+Indexed PNG-8 (colour type 3, bit depth 8) with `tRNS`. The table has 17 entries:
+the 16 EGA colours at indices 0–15 and index 16 as a fully transparent slot,
+painted pure magenta `#FF00FF` — which is not an EGA colour — so that a
+transparency failure is obvious instead of passing for a legitimate black. By
+construction there can be no pixel with an intermediate alpha.
 
-## Inventario
+## Inventory
 
-| Fichero | Lienzo | Celda | Fotogramas | Pivote | Ritmo |
+| File | Canvas | Cell | Frames | Pivot | Timing |
 |---|---|---|---|---|---|
-| `panda.png` | 144×24 | 24×24 | 6 | (12, 24) | `pecho_1`/`pecho_2` a 150 ms |
-| `bambu.png` | 32×8 | 8×8 | 4 | (4, 4) | bucle a 80 ms |
-| `boom.png` | 256×32 | 32×32 | 8 | (16, 16) | ~40 ms; el cráter se borra en el fotograma 3 |
-| `sol.png` | 40×20 | 20×20 | 2 | (10, 10) | `ouch` durante 1 s |
-| `fachadas.png` | 80×16 | 16×16 | 5 muestras | — | — |
+| `panda.png` | 144×24 | 24×24 | 6 | (12, 24) | `chest_1`/`chest_2` at 150 ms |
+| `bamboo.png` | 32×8 | 8×8 | 4 | (4, 4) | 80 ms loop |
+| `boom.png` | 256×32 | 32×32 | 8 | (16, 16) | ~40 ms; the crater is erased on frame 3 |
+| `sun.png` | 40×20 | 20×20 | 2 | (10, 10) | `ouch` for 1 s |
+| `facades.png` | 80×16 | 16×16 | 5 swatches | — | — |
 | `skyline.png` | 460×80 | — | 1 | — | — |
 | `logo.png` | 200×60 | — | 1 | — | — |
 
-Orden de fotogramas del panda: `idle`, `brazo_izq`, `brazo_der`, `pecho_1`,
-`pecho_2`, `muerto`. Se conservan los nombres del briefing aunque «golpe de
-pecho» sea gesto de gorila: describen la geometría de la pose, y cambiarlos solo
-rompería referencias. Del bambú: horizontal, diagonal ascendente, vertical,
-diagonal descendente.
+Panda frame order: `idle`, `arm_left`, `arm_right`, `chest_1`, `chest_2`,
+`defeated`. The chest names are kept from the brief even though beating the chest
+is a gorilla gesture: they describe the geometry of the pose, and changing them
+would only break references. Bamboo: horizontal, diagonal up, vertical, diagonal
+down.
 
-## Integración en Android
+## Android integration
 
-Cuando exista el módulo, estos PNG van a `app/src/main/assets/sprites/`, **no** a
-`res/drawable*/`: el sistema de recursos aplica escalado por densidad y
-destruiría el vecino más próximo. Cárgalos con `BitmapFactory.Options` con
-`inScaled = false` y píntalos con un `Paint` sin filtrado (`isFilterBitmap =
-false`, `isAntiAlias = false`).
+Once the module exists, these PNGs go into `app/src/main/assets/sprites/`, **not**
+into `res/drawable*/`: the resource system applies density scaling and would
+destroy the nearest-neighbour look. Load them with `BitmapFactory.Options` with
+`inScaled = false` and paint them with a `Paint` with filtering off
+(`isFilterBitmap = false`, `isAntiAlias = false`).
 
-`skyline.png` mide 460 px de ancho y se recorta por la derecha a la anchura real
-del lienzo. En la escena de prueba la banda se ancla 45 px por encima de la base
-de los edificios; pegada al borde inferior de la pantalla queda tapada del todo
-por los edificios jugables.
+`skyline.png` is 460 px wide and gets cropped from the right to the real canvas
+width. In the test scene the band is anchored 45 px above the base of the
+buildings; flush with the bottom edge of the screen it is completely hidden by
+the playable buildings.
 
-## Decisiones que se apartan del briefing
+## Decisions that depart from the brief
 
-Cada una es deliberada y reversible; están todas en los comentarios del `art_*.py`
-correspondiente.
+Each one is deliberate and reversible; they all live in the comments of the
+corresponding `art_*.py`.
 
-1. **No hay ficheros `.aseprite`.** En este entorno no hay Aseprite, y escribir su
-   formato binario a ciegas produciría ficheros que nadie ha podido abrir. La
-   fuente editable es el `art_*.py`: cada píxel está escrito a mano en ASCII o
-   colocado por una regla explícita, es legible en una revisión de código y el
-   resultado es reproducible bit a bit. Para pasar a Aseprite: abrir el PNG e
-   importar `paleta_ega16.gpl`.
-2. **El negro hace de contorno y de mancha a la vez en el panda.** Por eso los
-   brazos levantados no llevan contorno propio: rodear de negro un brazo ya negro
-   lo engordaría a 4 px. La silueta se define donde empieza el blanco o el fondo.
-3. **El panda usa cuatro tonos, no dos.** Blanco (15) y negro (0) para las
-   manchas, gris oscuro (8) para dar forma a las masas negras y gris claro (7)
-   para la sombra escalonada de la barriga. Sin ellos, brazos y barriga son
-   superficies planas de 8 px.
-4. **`muerto` está desplomado, no tumbado.** Se probaron dos versiones tumbadas de
-   perfil: a 1× una queda como un bulto y la otra se lee como una fábrica con
-   chimeneas. Aplastar la silueta vertical de 20 a 12 px conserva al personaje y
-   se reconoce de un vistazo. Es una desviación de la *sugerencia* del documento,
-   que no era normativa.
-5. **La caña de bambú es una barra recta, no una silueta de planta.** Los cuatro
-   fotogramas son el mismo cuerpo de 6×2 px girado. Lo que la identifica a 8×8 no
-   es el contorno, que no da para más que una barra, sino los **nudos**: dos
-   bandas de verde oscuro sobre el cuerpo en verde claro. Sin nudos es un palo.
-6. **Los rayos del sol no llevan contorno.** A 1 px de grosor, contornearlos los
-   convierte en barras de 3 px y el sol pasa a ser una rueda dentada negra. El
-   disco sí lleva contorno.
-7. **El color prohibido para la base de las fachadas cambia de amarillo a verde**,
-   y se añade el blanco. Ver la tabla del cambio de tema.
-8. **La quinta fachada es marrón, no azul.** Azul (1) es el tono de la silueta del
-   skyline: un edificio jugable del mismo color que el fondo se pierde.
-9. **Los puntos de ventana del skyline van en azul claro (9), no en amarillo.** El
-   amarillo es el color de las ventanas encendidas de las fachadas jugables;
-   repetirlo en el fondo borra la diferencia entre lo que está delante y lo que
-   está detrás.
-10. **`logo.png` se ha hecho pese al bloqueo de la sección 9.** Ver abajo.
+1. **There are no `.aseprite` files.** There is no Aseprite in this environment,
+   and writing its binary format blind would produce files nobody has been able
+   to open. The editable source is the `art_*.py`: every pixel is either written
+   by hand in ASCII or placed by an explicit rule, it is readable in a code
+   review, and the result is reproducible bit for bit. To move into Aseprite:
+   open the PNG and import `ega16.gpl`.
+2. **Black works as outline and as patch at once on the panda.** That is why the
+   raised arms carry no outline of their own: surrounding an already-black arm
+   with black would fatten it to 4 px. The silhouette is defined wherever the
+   white or the background begins.
+3. **The panda uses four tones, not two.** White (15) and black (0) for the
+   patches, dark grey (8) to give shape to the black masses and light grey (7)
+   for the stepped shading on the belly. Without them, arms and belly are flat
+   8 px surfaces.
+4. **`defeated` is collapsed, not lying down.** Two versions lying in profile
+   were tried: at 1× one reads as a lump and the other as a factory with
+   chimneys. Squashing the vertical silhouette from 20 to 12 px keeps the
+   character and is recognisable at a glance. This departs from the document's
+   *suggestion*, which was not normative.
+5. **The bamboo cane is a straight bar, not a plant silhouette.** All four frames
+   are the same 6×2 px body rotated. What identifies it at 8×8 is not the
+   outline, which allows nothing beyond a bar, but the **nodes**: two bands of
+   dark green over a light-green body. Without the nodes it is a stick.
+6. **The sun's rays carry no outline.** At 1 px thick, outlining them turns them
+   into 3 px bars and the sun becomes a black cogwheel. The disc is outlined.
+7. **The forbidden facade base colour changes from yellow to green**, and white
+   is added. See the theme-change table.
+8. **The fifth facade is brown, not blue.** Blue (1) is the tone of the skyline
+   silhouette: a playable building the same colour as the background is lost.
+9. **The skyline's window dots are light blue (9), not yellow.** Yellow is the
+   colour of the lit windows on the playable facades; repeating it in the
+   background erases the difference between what is in front and what is behind.
+10. **`logo.png` was made despite the block in section 9.** See below.
 
-## Pendiente de decisión
+## Pending decisions
 
-- **Nombre del juego.** La sección 9 bloquea el logo hasta que el nombre esté
-  decidido. Se ha rotulado `THROWING BAMBU` por el nombre del repositorio, con
-  letra original dibujada para esta pieza; no se usa «Gorillas» ni la tipografía
-  de `GORILLA.BAS`. Si el nombre cambia, solo cambian las constantes `LINEA_1` y
-  `LINEA_2` de `tools/art_logo.py`: los glifos ya están.
-- **Densidad de ventanas encendidas.** El motor decide cuántas enciende. En la
-  escena de prueba están densas a propósito, para ver el caso malo. Recomendación:
-  por debajo de una de cada cuatro.
-- **Anclaje del skyline.** «Se ancla al borde inferior del área de cielo» admite
-  dos lecturas. Ver *Integración en Android*.
-- **Nombres de pose.** Si el proyecto prefiere que `pecho_1`/`pecho_2` pasen a
-  llamarse algo sin connotación de gorila, es un cambio de una línea en
-  `art_panda.py`; no afecta al orden de la tira.
+- **Game name.** Section 9 blocks the logo until the name is decided. It is
+  lettered `THROWING BAMBU` after the repository name, with original letterforms
+  drawn for this piece; neither "Gorillas" nor the `GORILLA.BAS` typeface is
+  used. If the name changes, only the `LINE_1` and `LINE_2` constants in
+  `tools/art_logo.py` change: the glyphs are already there.
+- **Lit-window density.** The engine decides how many it lights. In the test
+  scene they are dense on purpose, to see the bad case. Recommendation: below one
+  in four.
+- **Skyline anchoring.** "Anchored to the bottom edge of the sky area" admits two
+  readings. See *Android integration*.
+- **Pose names.** If the project would rather `chest_1`/`chest_2` were called
+  something without a gorilla connotation, it is a one-line change in
+  `art_panda.py`; it does not affect the order of the strip.
 
-## Fuera de alcance de esta entrega
+## Out of scope for this delivery
 
-La sección 10 (interfaz) no es píxel art y no entra en «los sprites»: tipografía,
-flecha de viento en SVG, especificación de color de UI e iconos de 24 dp siguen
-pendientes. La tipografía además exige verificar los glifos acentuados y la «ñ»
-de *Press Start 2P* o *Silkscreen* antes de comprometerse, que es una decisión de
-licencia y no de dibujo.
+Section 10 (interface) is not pixel art and is not part of "the sprites":
+typeface, wind arrow in SVG, UI colour specification and 24 dp icons are all
+still pending. The typeface additionally requires verifying the accented glyphs
+and the "ñ" of *Press Start 2P* or *Silkscreen* before committing, which is a
+licensing decision rather than a drawing one.

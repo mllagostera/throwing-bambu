@@ -1,51 +1,51 @@
-"""Nucleo comun de produccion de arte: paleta EGA, lienzos ASCII y escritura PNG.
+"""Shared art-production core: EGA palette, ASCII canvases and PNG writing.
 
-Reglas que este modulo hace imposibles de romper (ver ESPEC_SPRITES.md, seccion 0):
-  - paleta cerrada de 16 colores: cualquier indice fuera de 0..15 es un error;
-  - alfa binario: el PNG se escribe indexado con un unico indice transparente,
-    asi que no existe representacion posible para un alfa intermedio;
-  - celda uniforme: los constructores validan dimensiones al construir.
+Rules this module makes impossible to break (see docs/SPRITE_SPEC.md, section 0):
+  - closed 16-colour palette: any index outside 0..15 is an error;
+  - binary alpha: PNGs are written indexed with a single transparent index, so
+    there is no representation for a partial alpha value;
+  - uniform cell: the constructors validate dimensions as they build.
 """
 
 from __future__ import annotations
 
-# Paleta EGA de 16 colores, en el orden declarado por el briefing (seccion 1).
+# The 16-colour EGA palette, in the order the brief declares (section 1).
 EGA = [
-    (0x00, 0x00, 0x00),  # 0  negro
-    (0x00, 0x00, 0xAA),  # 1  azul
-    (0x00, 0xAA, 0x00),  # 2  verde
-    (0x00, 0xAA, 0xAA),  # 3  cian
-    (0xAA, 0x00, 0x00),  # 4  rojo
+    (0x00, 0x00, 0x00),  # 0  black
+    (0x00, 0x00, 0xAA),  # 1  blue
+    (0x00, 0xAA, 0x00),  # 2  green
+    (0x00, 0xAA, 0xAA),  # 3  cyan
+    (0xAA, 0x00, 0x00),  # 4  red
     (0xAA, 0x00, 0xAA),  # 5  magenta
-    (0xAA, 0x55, 0x00),  # 6  marron
-    (0xAA, 0xAA, 0xAA),  # 7  gris claro
-    (0x55, 0x55, 0x55),  # 8  gris oscuro
-    (0x55, 0x55, 0xFF),  # 9  azul claro
-    (0x55, 0xFF, 0x55),  # 10 verde claro
-    (0x55, 0xFF, 0xFF),  # 11 cian claro
-    (0xFF, 0x55, 0x55),  # 12 rojo claro
-    (0xFF, 0x55, 0xFF),  # 13 magenta claro
-    (0xFF, 0xFF, 0x55),  # 14 amarillo
-    (0xFF, 0xFF, 0xFF),  # 15 blanco
+    (0xAA, 0x55, 0x00),  # 6  brown
+    (0xAA, 0xAA, 0xAA),  # 7  light grey
+    (0x55, 0x55, 0x55),  # 8  dark grey
+    (0x55, 0x55, 0xFF),  # 9  light blue
+    (0x55, 0xFF, 0x55),  # 10 light green
+    (0x55, 0xFF, 0xFF),  # 11 light cyan
+    (0xFF, 0x55, 0x55),  # 12 light red
+    (0xFF, 0x55, 0xFF),  # 13 light magenta
+    (0xFF, 0xFF, 0x55),  # 14 yellow
+    (0xFF, 0xFF, 0xFF),  # 15 white
 ]
 
 EGA_NAMES = [
-    "negro", "azul", "verde", "cian", "rojo", "magenta", "marron", "gris claro",
-    "gris oscuro", "azul claro", "verde claro", "cian claro", "rojo claro",
-    "magenta claro", "amarillo", "blanco",
+    "black", "blue", "green", "cyan", "red", "magenta", "brown", "light grey",
+    "dark grey", "light blue", "light green", "light cyan", "light red",
+    "light magenta", "yellow", "white",
 ]
 
-# Indice reservado para "sin pintar". No es un color de la paleta: se escribe en
-# el chunk tRNS del PNG y por tanto es 100 % transparente, nunca un alfa parcial.
+# Index reserved for "unpainted". It is not a palette colour: it goes into the
+# PNG tRNS chunk and is therefore 100 % transparent, never a partial alpha.
 T = 16
 
-# Color del hueco transparente en la tabla del PNG. Magenta puro NO pertenece a
-# la EGA, de modo que si alguna herramienta ignora el tRNS el fallo salta a la
-# vista en lugar de pasar por un negro legitimo.
+# Colour of the transparent slot in the PNG table. Pure magenta is NOT part of
+# the EGA palette, so if some tool ignores tRNS the failure is obvious instead
+# of passing for a legitimate black.
 TRANSPARENT_KEY = (0xFF, 0x00, 0xFF)
 
-# Mapa de caracteres usado por los lienzos ASCII de art_*.py.
-#   '0'..'9','A'..'F' -> indice de paleta     '.' -> transparente
+# Character map used by the ASCII canvases in art_*.py.
+#   '0'..'9','A'..'F' -> palette index     '.' -> transparent
 _CHARS = "0123456789ABCDEF"
 
 
@@ -54,39 +54,37 @@ def idx_of_char(ch: str) -> int:
         return T
     up = ch.upper()
     if up not in _CHARS:
-        raise ValueError(f"caracter {ch!r} fuera de la paleta (use 0-9, A-F o '.')")
+        raise ValueError(f"character {ch!r} is outside the palette (use 0-9, A-F or '.')")
     return _CHARS.index(up)
 
 
 class Canvas:
-    """Rejilla de indices de paleta. Origen arriba-izquierda."""
+    """Grid of palette indices. Origin is top-left."""
 
     def __init__(self, w: int, h: int, fill: int = T):
         self.w, self.h = w, h
         self.px = [[fill] * w for _ in range(h)]
 
-    # -- construccion -----------------------------------------------------
+    # -- construction -----------------------------------------------------
     @classmethod
     def from_ascii(cls, rows, expect_w=None, expect_h=None, name="<anon>"):
         rows = [r for r in rows]
         h = len(rows)
         if expect_h is not None and h != expect_h:
-            raise ValueError(f"{name}: {h} filas, se esperaban {expect_h}")
+            raise ValueError(f"{name}: {h} rows, expected {expect_h}")
         w = len(rows[0]) if rows else 0
         if expect_w is not None:
             w = expect_w
         for y, row in enumerate(rows):
             if len(row) != w:
-                raise ValueError(
-                    f"{name}: fila {y} mide {len(row)} px, se esperaban {w}"
-                )
+                raise ValueError(f"{name}: row {y} is {len(row)} px, expected {w}")
         c = cls(w, h)
         for y, row in enumerate(rows):
             for x, ch in enumerate(row):
                 c.px[y][x] = idx_of_char(ch)
         return c
 
-    # -- acceso -----------------------------------------------------------
+    # -- access -----------------------------------------------------------
     def get(self, x: int, y: int) -> int:
         if 0 <= x < self.w and 0 <= y < self.h:
             return self.px[y][x]
@@ -94,7 +92,7 @@ class Canvas:
 
     def set(self, x: int, y: int, i: int) -> None:
         if not (0 <= i <= 16):
-            raise ValueError(f"indice {i} fuera de la paleta cerrada")
+            raise ValueError(f"index {i} is outside the closed palette")
         if 0 <= x < self.w and 0 <= y < self.h:
             self.px[y][x] = i
 
@@ -112,7 +110,7 @@ class Canvas:
                 self.set(x + dx, y + dy, v)
 
     def bbox(self):
-        """Caja minima de pixeles opacos, o None si el lienzo esta vacio."""
+        """Smallest box containing opaque pixels, or None if the canvas is empty."""
         xs, ys = [], []
         for y in range(self.h):
             for x in range(self.w):
@@ -134,11 +132,11 @@ class Canvas:
 
 
 def hstrip(frames, cell_w: int, cell_h: int, name="<anon>") -> Canvas:
-    """Monta una tira horizontal de fotogramas de celda identica."""
+    """Assemble a horizontal strip out of frames sharing one cell size."""
     for n, f in enumerate(frames):
         if (f.w, f.h) != (cell_w, cell_h):
             raise ValueError(
-                f"{name}: fotograma {n} mide {f.w}x{f.h}, la celda es {cell_w}x{cell_h}"
+                f"{name}: frame {n} is {f.w}x{f.h}, the cell is {cell_w}x{cell_h}"
             )
     strip = Canvas(cell_w * len(frames), cell_h)
     for n, f in enumerate(frames):
@@ -147,7 +145,7 @@ def hstrip(frames, cell_w: int, cell_h: int, name="<anon>") -> Canvas:
 
 
 def save_png(canvas: Canvas, path: str) -> None:
-    """Escribe PNG-8 indexado con un unico indice totalmente transparente."""
+    """Write a PNG-8 with a single fully transparent index."""
     from PIL import Image
 
     img = Image.new("P", (canvas.w, canvas.h), T)
@@ -158,5 +156,5 @@ def save_png(canvas: Canvas, path: str) -> None:
     pal += [0, 0, 0] * (256 - len(EGA) - 1)
     img.putpalette(pal)
     img.putdata([v for row in canvas.px for v in row])
-    # Sin optimize: reindexaria la tabla y movería el indice transparente.
+    # No optimize: it would reindex the table and move the transparent index.
     img.save(path, transparency=T)

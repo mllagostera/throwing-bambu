@@ -1,3 +1,0 @@
-# Degradado de cielo. Lo interpola el motor por codigo.
-arriba=#0000AA
-abajo=#5555FF

@@ -1,51 +1,52 @@
 #!/usr/bin/env python3
-"""Genera todos los entregables de arte en art/.
+"""Generate every art deliverable into art/.
 
-    python3 tools/gen_sprites.py            # escribe art/
-    python3 tools/gen_sprites.py --zoom 6   # ademas, contactos ampliados
+    python3 tools/gen_sprites.py            # writes art/
+    python3 tools/gen_sprites.py --zoom 6   # plus magnified contact sheets
 
-Requiere Pillow (pip install pillow). Los PNG salen indexados (PNG-8) con un
-unico indice totalmente transparente: por construccion no puede existir un pixel
-con alfa intermedio.
+Requires Pillow (pip install pillow). The PNGs come out indexed (PNG-8) with a
+single fully transparent index: by construction there can be no pixel with an
+intermediate alpha.
 """
 
 import argparse
 import os
 
-import art_bambu
+import art_bamboo
 import art_boom
-import art_fachadas
+import art_facades
 import art_logo
 import art_panda
 import art_skyline
-import art_sol
+import art_sun
 import ega
 from ega import Canvas, hstrip, save_png
 
-RAIZ = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
-ART = os.path.join(RAIZ, "art")
+ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+ART = os.path.join(ROOT, "art")
 SPRITES = os.path.join(ART, "sprites")
-PALETA = os.path.join(ART, "palette")
+PALETTE = os.path.join(ART, "palette")
 
-# Degradado de cielo: lo genera el motor por codigo, no se dibuja. Se entrega
-# solo el par de colores, tomados de la EGA (1 azul arriba, 9 azul claro abajo),
-# para que la silueta del skyline en azul 1 siga separandose del horizonte.
-CIELO_ARRIBA = "#0000AA"
-CIELO_ABAJO = "#5555FF"
+# Sky gradient: the engine generates it in code, it is not drawn. Only the pair
+# of colours is delivered, both taken from the EGA palette (1 blue on top, 9
+# light blue at the bottom), so the blue-1 skyline silhouette keeps separating
+# from the horizon.
+SKY_TOP = "#0000AA"
+SKY_BOTTOM = "#5555FF"
 
 
 def _gpl() -> str:
-    lineas = ["GIMP Palette", "Name: EGA 16", "Columns: 16",
-              "# Paleta cerrada del proyecto. El orden es normativo: el indice",
-              "# de cada color es el que usan los ficheros art_*.py.", "#"]
+    lines = ["GIMP Palette", "Name: EGA 16", "Columns: 16",
+             "# Closed palette for the project. The order is normative: each",
+             "# colour's index is the one the art_*.py files use.", "#"]
     for i, (r, g, b) in enumerate(ega.EGA):
-        lineas.append(f"{r:3d} {g:3d} {b:3d}\t{i:2d} {ega.EGA_NAMES[i]}")
-    return "\n".join(lineas) + "\n"
+        lines.append(f"{r:3d} {g:3d} {b:3d}\t{i:2d} {ega.EGA_NAMES[i]}")
+    return "\n".join(lines) + "\n"
 
 
-def _zoom(c: Canvas, factor: int, rejilla=None) -> Canvas:
-    """Amplia por vecino mas proximo. `rejilla` = ancho de celda para marcar
-    limites de fotograma con una linea de 1 px."""
+def _zoom(c: Canvas, factor: int, grid=None) -> Canvas:
+    """Magnify with nearest neighbour. `grid` = cell width, to mark frame
+    boundaries with a 1 px line."""
     z = Canvas(c.w * factor, c.h * factor)
     for y in range(c.h):
         for x in range(c.w):
@@ -55,64 +56,64 @@ def _zoom(c: Canvas, factor: int, rejilla=None) -> Canvas:
             for dy in range(factor):
                 for dx in range(factor):
                     z.set(x * factor + dx, y * factor + dy, v)
-    if rejilla:
-        for n in range(1, c.w // rejilla):
+    if grid:
+        for n in range(1, c.w // grid):
             for y in range(z.h):
                 if y % 2 == 0:
-                    z.set(n * rejilla * factor, y, 5)
+                    z.set(n * grid * factor, y, 5)
     return z
 
 
-PIEZAS = []
+PIECES = []
 
 
-def pieza(nombre, canvas, celda=None):
-    PIEZAS.append((nombre, canvas, celda))
+def piece(name, canvas, cell=None):
+    PIECES.append((name, canvas, cell))
     return canvas
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--zoom", type=int, default=0,
-                    help="escribe ademas contactos ampliados en art/preview/")
+                    help="also write magnified contact sheets into art/preview/")
     args = ap.parse_args()
 
     os.makedirs(SPRITES, exist_ok=True)
-    os.makedirs(PALETA, exist_ok=True)
+    os.makedirs(PALETTE, exist_ok=True)
 
-    pieza("panda", hstrip(art_panda.frames(), 24, 24, "panda"), 24)
-    pieza("bambu", hstrip(art_bambu.frames(), 8, 8, "bambu"), 8)
-    pieza("boom", hstrip(art_boom.frames(), 32, 32, "boom"), 32)
-    pieza("sol", hstrip(art_sol.frames(), 20, 20, "sol"), 20)
-    pieza("fachadas", hstrip(art_fachadas.frames(), 16, 16, "fachadas"), 16)
-    pieza("skyline", art_skyline.build())
-    pieza("logo", art_logo.build())
+    piece("panda", hstrip(art_panda.frames(), 24, 24, "panda"), 24)
+    piece("bamboo", hstrip(art_bamboo.frames(), 8, 8, "bamboo"), 8)
+    piece("boom", hstrip(art_boom.frames(), 32, 32, "boom"), 32)
+    piece("sun", hstrip(art_sun.frames(), 20, 20, "sun"), 20)
+    piece("facades", hstrip(art_facades.frames(), 16, 16, "facades"), 16)
+    piece("skyline", art_skyline.build())
+    piece("logo", art_logo.build())
 
-    for nombre, canvas, _ in PIEZAS:
-        ruta = os.path.join(SPRITES, nombre + ".png")
-        save_png(canvas, ruta)
-        print(f"{ruta}  {canvas.w}x{canvas.h}  {len(canvas.colors())} colores")
+    for name, canvas, _ in PIECES:
+        path = os.path.join(SPRITES, name + ".png")
+        save_png(canvas, path)
+        print(f"{path}  {canvas.w}x{canvas.h}  {len(canvas.colors())} colours")
 
-    # Entregable 0: la paleta.
-    with open(os.path.join(PALETA, "paleta_ega16.gpl"), "w") as f:
+    # Deliverable 0: the palette.
+    with open(os.path.join(PALETTE, "ega16.gpl"), "w") as f:
         f.write(_gpl())
     swatch = Canvas(16, 1)
     for i in range(16):
         swatch.set(i, 0, i)
-    save_png(swatch, os.path.join(PALETA, "paleta_ega16.png"))
-    save_png(_zoom(swatch, 16), os.path.join(PALETA, "paleta_ega16_x16.png"))
+    save_png(swatch, os.path.join(PALETTE, "ega16.png"))
+    save_png(_zoom(swatch, 16), os.path.join(PALETTE, "ega16_x16.png"))
 
-    with open(os.path.join(ART, "cielo.txt"), "w") as f:
-        f.write(f"# Degradado de cielo. Lo interpola el motor por codigo.\n"
-                f"arriba={CIELO_ARRIBA}\nabajo={CIELO_ABAJO}\n")
+    with open(os.path.join(ART, "sky.txt"), "w") as f:
+        f.write("# Sky gradient. The engine interpolates it in code.\n"
+                f"top={SKY_TOP}\nbottom={SKY_BOTTOM}\n")
 
     if args.zoom:
         prev = os.path.join(ART, "preview")
         os.makedirs(prev, exist_ok=True)
-        for nombre, canvas, celda in PIEZAS:
-            save_png(_zoom(canvas, args.zoom, celda),
-                     os.path.join(prev, f"{nombre}_x{args.zoom}.png"))
-        print(f"contactos ampliados en {prev}")
+        for name, canvas, cell in PIECES:
+            save_png(_zoom(canvas, args.zoom, cell),
+                     os.path.join(prev, f"{name}_x{args.zoom}.png"))
+        print(f"magnified contact sheets in {prev}")
 
 
 if __name__ == "__main__":

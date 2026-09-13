@@ -1,25 +1,25 @@
-"""logo.png -- 200 x 60, titulo para la pantalla de menu.
+"""logo.png -- 200 x 60, the title for the menu screen.
 
-AVISO DE ALCANCE. El briefing (seccion 9) bloquea esta pieza hasta que el nombre
-definitivo este decidido, y prohibe expresamente usar «Gorillas» o la tipografia
-de GORILLA.BAS, que son de Microsoft. Aqui se rotula THROWING BAMBU porque es el
-nombre del repositorio; la letra es original, dibujada para esta pieza. Si el
-nombre cambia, solo cambia la cadena de TEXTO: los glifos estan en _FONT.
+SCOPE NOTICE. The brief (section 9) blocks this piece until the final name is
+decided, and expressly forbids using "Gorillas" or the GORILLA.BAS typeface,
+which belong to Microsoft. It is lettered THROWING BAMBU here because that is
+the repository name; the letterforms are original, drawn for this piece. If the
+name changes, only the TEXT constants change: the glyphs are in _FONT.
 
-Construccion: cada glifo se dibuja a 7x10 con trazo de 1 px y se amplia x2 para
-dar un trazo de 2 px. El contorno negro, el brillo superior, la sombra inferior y
-la sombra proyectada se aplican DESPUES, a resolucion final, asi que la pieza no
-es un escalado ingenuo: los detalles de 1 px existen solo en el resultado.
+Construction: each glyph is drawn at 7x10 with a 1 px stroke and scaled x2 to
+give a 2 px stroke. The black outline, the top highlight, the stroke shadow and
+the drop shadow are all applied AFTERWARDS, at final resolution, so the piece is
+not a naive upscale: the 1 px details exist only in the result.
 """
 
 from ega import Canvas, T
 
 WIDTH, HEIGHT = 200, 60
 
-NEGRO, MARRON, GRIS_OSC, AMARILLO, BLANCO = 0, 6, 8, 14, 15
+BLACK, BROWN, DARK_GREY, YELLOW, WHITE = 0, 6, 8, 14, 15
 
-LINEA_1 = "THROWING"
-LINEA_2 = "BAMBU"
+LINE_1 = "THROWING"
+LINE_2 = "BAMBU"
 
 _FONT = {
     "T": ["1111111", "...1...", "...1...", "...1...", "...1...",
@@ -48,39 +48,39 @@ _FONT = {
           "1.....1", "1.....1", "1.....1", "1.....1", ".11111."],
 }
 
-GLYPH_W, GLYPH_H = 14, 20     # 7x10 ampliado x2
-TRACKING = 2                  # separacion entre glifos, en px finales
+GLYPH_W, GLYPH_H = 14, 20     # 7x10 scaled x2
+TRACKING = 2                  # gap between glyphs, in final pixels
 
-# Cana de bambu de adorno, dibujada a resolucion final (no es el sprite de juego
-# ampliado: ese mide 8x8 y al x2 delataria el escalado). Aqui si hay sitio para
-# los nudos y para dos hojas, que a 8x8 no cabian.
-_PLATANO = [
+# Decorative bamboo cane, drawn at final resolution (it is not the game sprite
+# upscaled: that one is 8x8 and at x2 would give the scaling away). Here there
+# is room for the nodes and for two leaves, which did not fit at 8x8.
+_CANE = [
     ".....000000.....",
     ".....0AAAA0.....",
     ".....0AAAA0000..",
-    ".....0AAAA0AA0..",     # hoja derecha
+    ".....0AAAA0AA0..",     # right leaf
     ".....0AAAA0000..",
-    ".....022220.....",     # nudo
+    ".....022220.....",     # node
     "..0000AAAA0.....",
-    "..0AA0AAAA0.....",     # hoja izquierda
+    "..0AA0AAAA0.....",     # left leaf
     "..0000AAAA0.....",
     ".....0AAAA0.....",
-    ".....022220.....",     # nudo
+    ".....022220.....",     # node
     ".....0AAAA0.....",
     ".....0AAAA0.....",
     ".....0AAAA0.....",
-    ".....022220.....",     # nudo
+    ".....022220.....",     # node
     ".....000000.....",
 ]
-PLATANO_W = 16
-HUECO_PLATANO = 4
+CANE_W = 16
+CANE_GAP = 4
 
 
-def _ink(texto: str):
-    """Conjunto de pixeles de trazo del texto, ya ampliado x2. Origen (0,0)."""
+def _ink(text: str):
+    """Set of stroke pixels for the text, already scaled x2. Origin (0,0)."""
     ink = set()
     x0 = 0
-    for ch in texto:
+    for ch in text:
         g = _FONT[ch]
         for y, row in enumerate(g):
             for x, c in enumerate(row):
@@ -93,36 +93,36 @@ def _ink(texto: str):
 
 
 def _render(c: Canvas, ink, ox: int, oy: int):
-    """Sombra proyectada, contorno, relleno, brillo y sombra de trazo."""
+    """Drop shadow, outline, fill, highlight and stroke shadow."""
     abs_ink = {(x + ox, y + oy) for (x, y) in ink}
     for (x, y) in sorted(abs_ink):
         if (x - 2, y - 2) not in abs_ink:
-            c.set(x + 2, y + 2, GRIS_OSC)
+            c.set(x + 2, y + 2, DARK_GREY)
     for (x, y) in sorted(abs_ink):
         for dy in (-1, 0, 1):
             for dx in (-1, 0, 1):
                 if (x + dx, y + dy) not in abs_ink:
-                    c.set(x + dx, y + dy, NEGRO)
+                    c.set(x + dx, y + dy, BLACK)
     for (x, y) in sorted(abs_ink):
         if (x, y - 1) not in abs_ink:
-            c.set(x, y, BLANCO)          # brillo: luz desde arriba
+            c.set(x, y, WHITE)           # highlight: light from above
         elif (x, y + 1) not in abs_ink and (x, y - 2) in abs_ink:
-            # Sombra del trazo solo en trazos de 3 px o mas. En las barras
-            # horizontales de 2 px se comeria el amarillo entero y el rotulo
-            # quedaria blanco y marron.
-            c.set(x, y, MARRON)
+            # Stroke shadow only on strokes 3 px or thicker. On the 2 px
+            # horizontal bars it would eat all the yellow and the wordmark
+            # would come out white and brown.
+            c.set(x, y, BROWN)
         else:
-            c.set(x, y, AMARILLO)
+            c.set(x, y, YELLOW)
 
 
 def build() -> Canvas:
     c = Canvas(WIDTH, HEIGHT)
 
-    ink1, w1 = _ink(LINEA_1)
-    ink2, w2 = _ink(LINEA_2)
-    w2_total = w2 + HUECO_PLATANO + PLATANO_W
+    ink1, w1 = _ink(LINE_1)
+    ink2, w2 = _ink(LINE_2)
+    w2_total = w2 + CANE_GAP + CANE_W
 
-    # Se centra contando contorno (1 px) y sombra proyectada (2 px).
+    # Centred counting the outline (1 px) and the drop shadow (2 px).
     x1 = (WIDTH - (w1 + 3)) // 2
     x2 = (WIDTH - (w2_total + 3)) // 2
     y1, y2 = 6, 32
@@ -130,6 +130,6 @@ def build() -> Canvas:
     _render(c, ink1, x1, y1)
     _render(c, ink2, x2, y2)
 
-    plat = Canvas.from_ascii(_PLATANO, expect_w=16, expect_h=16, name="logo/bambu")
-    c.blit(plat, x2 + w2 + HUECO_PLATANO, y2 + 2)
+    cane = Canvas.from_ascii(_CANE, expect_w=16, expect_h=16, name="logo/bamboo")
+    c.blit(cane, x2 + w2 + CANE_GAP, y2 + 2)
     return c

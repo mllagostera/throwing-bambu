@@ -1,20 +1,20 @@
-"""boom.png -- 8 fotogramas de 32x32, pivote (16, 16) = punto de impacto.
+"""boom.png -- 8 frames of 32x32, pivot (16, 16) = point of impact.
 
-Restriccion dura del briefing: el motor borra del terreno un circulo de radio 12
-centrado en el pivote, y lo hace en el fotograma 3. Por eso el fotograma 3 es el
-pico y su radio visible es 15 px, 3 px por encima del crater: si el fuego fuese
-mas pequeno que el agujero el impacto se percibe flojo.
+Hard constraint from the brief: the engine erases a radius-12 circle of terrain
+centred on the pivot, and it does so on frame 3. That is why frame 3 is the peak
+and its visible radius is 15 px, 3 px beyond the crater: if the fire were
+smaller than the hole, the impact would feel weak.
 
-  0-2  expansion, radio visible 4 -> 8 -> 12
-  3    pico, radio 15
-  4    el nucleo se vacia y el borde se vuelve irregular
-  5    el anillo se rompe en seis arcos
-  6-7  fragmentos sueltos que se apagan
+  0-2  expansion, visible radius 4 -> 8 -> 12
+  3    peak, radius 15
+  4    the core empties out and the edge turns ragged
+  5    the ring breaks into six arcs
+  6-7  loose fragments burning out
 
-Rampa: 15 blanco -> 14 amarillo -> 12 rojo claro -> 4 rojo -> transparente. Las
-transiciones se resuelven con tablero de ajedrez: el desplazamiento del dither es
-0 o +1 px segun la paridad de (x+y), nunca negativo, de modo que el radio maximo
-de cada fotograma es exactamente el declarado y jamas se pasa de largo.
+Ramp: 15 white -> 14 yellow -> 12 light red -> 4 red -> transparent. Transitions
+are resolved with a checkerboard: the dither offset is 0 or +1 px depending on
+the parity of (x+y), never negative, so each frame's maximum radius is exactly
+the declared one and never overshoots.
 """
 
 import math
@@ -23,36 +23,36 @@ from ega import Canvas, T
 
 CELL = (32, 32)
 FRAME_MS = 40
-CRATER_RADIUS = 12          # lo que borra el motor
-CRATER_FRAME = 3            # cuando lo borra
-PEAK_RADIUS = 15            # radio visible del fotograma de pico
+CRATER_RADIUS = 12          # what the engine erases
+CRATER_FRAME = 3            # when it erases it
+PEAK_RADIUS = 15            # visible radius of the peak frame
 
-CX = CY = 15.5              # el pivote (16,16) cae entre pixeles
+CX = CY = 15.5              # the pivot (16,16) falls between pixels
 
-BLANCO, AMARILLO, ROJO_CLARO, ROJO = 15, 14, 12, 4
-HUECO = None                # banda transparente (nucleo ya apagado)
+WHITE, YELLOW, LIGHT_RED, RED = 15, 14, 12, 4
+HOLLOW = None               # transparent band (core already burnt out)
 
-# Rampa radial por fotograma, de dentro afuera: (radio exterior, color).
+# Radial ramp per frame, inside out: (outer radius, colour).
 _BANDS = {
-    0: [(1.5, BLANCO), (3.0, AMARILLO), (4.0, ROJO_CLARO)],
-    1: [(2.5, BLANCO), (5.0, AMARILLO), (7.0, ROJO_CLARO), (8.0, ROJO)],
-    2: [(4.0, BLANCO), (7.5, AMARILLO), (10.0, ROJO_CLARO), (12.0, ROJO)],
-    3: [(5.0, BLANCO), (9.0, AMARILLO), (12.5, ROJO_CLARO), (15.0, ROJO)],
-    4: [(3.0, HUECO), (6.5, AMARILLO), (10.0, ROJO_CLARO), (14.0, ROJO)],
-    5: [(6.0, HUECO), (9.5, ROJO_CLARO), (15.0, ROJO)],
+    0: [(1.5, WHITE), (3.0, YELLOW), (4.0, LIGHT_RED)],
+    1: [(2.5, WHITE), (5.0, YELLOW), (7.0, LIGHT_RED), (8.0, RED)],
+    2: [(4.0, WHITE), (7.5, YELLOW), (10.0, LIGHT_RED), (12.0, RED)],
+    3: [(5.0, WHITE), (9.0, YELLOW), (12.5, LIGHT_RED), (15.0, RED)],
+    4: [(3.0, HOLLOW), (6.5, YELLOW), (10.0, LIGHT_RED), (14.0, RED)],
+    5: [(6.0, HOLLOW), (9.5, LIGHT_RED), (15.0, RED)],
 }
 
-# Fotograma 4: muescas que rompen el borde. (angulo central, semiancho) en grados;
-# solo muerden mas alla de r=9, asi que el nucleo sigue entero.
-_MUESCAS = [(22, 5), (67, 4), (112, 6), (158, 3),
+# Frame 4: notches that break the edge. (centre angle, half-width) in degrees;
+# they only bite beyond r=9, so the core stays whole.
+_NOTCHES = [(22, 5), (67, 4), (112, 6), (158, 3),
             (203, 5), (248, 4), (293, 6), (338, 3)]
 
-# Fotograma 5: seis arcos. (angulo central, semiancho, r_int, r_ext).
-_ARCOS = [(15, 27, 8.5, 15), (72, 21, 9.0, 14), (133, 28, 8.5, 15),
-          (195, 22, 9.0, 14), (254, 26, 8.5, 15), (310, 20, 9.5, 13)]
+# Frame 5: six arcs. (centre angle, half-width, r_inner, r_outer).
+_ARCS = [(15, 27, 8.5, 15), (72, 21, 9.0, 14), (133, 28, 8.5, 15),
+         (195, 22, 9.0, 14), (254, 26, 8.5, 15), (310, 20, 9.5, 13)]
 
-# Plantillas de fragmento. 'X' = cuerpo, 'o' = nucleo aun caliente, '.' = nada.
-_PLANTILLAS = {
+# Fragment templates. 'X' = body, 'o' = still-hot core, '.' = nothing.
+_TEMPLATES = {
     "a": [".XXX.", "XXoXX", "XXoXX", ".XXXX", "..XX."],
     "b": [".XX.", "XoXX", "XXX.", ".XX."],
     "c": [".X.", "XoX", ".X."],
@@ -60,10 +60,10 @@ _PLANTILLAS = {
     "e": ["X"],
 }
 
-# Fotogramas 6 y 7: (plantilla, angulo, radio). Colocados a mano: el briefing
-# prohibe el ruido aleatorio, y un anillo de fragmentos regular se lee como
-# rueda dentada en lugar de como fuego disgregandose.
-_FRAGMENTOS = {
+# Frames 6 and 7: (template, angle, radius). Placed by hand: the brief forbids
+# random noise, and an evenly spaced ring of fragments reads as a cogwheel
+# rather than as fire coming apart.
+_FRAGMENTS = {
     6: [("a", 16, 10.5), ("a", 58, 11.5), ("b", 96, 10.0), ("a", 134, 11.0),
         ("b", 172, 12.0), ("a", 212, 10.5), ("b", 252, 11.5), ("a", 292, 10.0),
         ("c", 330, 12.0), ("c", 352, 10.0)],
@@ -79,9 +79,9 @@ def _color_at(frame: int, r: float):
     return None
 
 
-def _es_hueco(frame: int, r: float) -> bool:
+def _is_hollow(frame: int, r: float) -> bool:
     bands = _BANDS[frame]
-    return bands[0][1] is HUECO and r <= bands[0][0]
+    return bands[0][1] is HOLLOW and r <= bands[0][0]
 
 
 def _ang_dist(a: float, b: float) -> float:
@@ -89,7 +89,7 @@ def _ang_dist(a: float, b: float) -> float:
 
 
 def _radial(n: int) -> Canvas:
-    """Fotogramas 0-5: bandas concentricas con dither de tablero."""
+    """Frames 0-5: concentric bands with checkerboard dithering."""
     c = Canvas(32, 32)
     for y in range(32):
         for x in range(32):
@@ -98,23 +98,25 @@ def _radial(n: int) -> Canvas:
             rd = r + (1.0 if (x + y) % 2 else 0.0)
             ang = math.degrees(math.atan2(-dy, dx)) % 360.0
             if n == 4 and rd > 9.0:
-                if any(_ang_dist(ang, a) <= w for a, w in _MUESCAS):
+                if any(_ang_dist(ang, a) <= w for a, w in _NOTCHES):
                     continue
             if n == 5:
                 if not any(ri <= rd <= ro and _ang_dist(ang, a) <= w
-                           for a, w, ri, ro in _ARCOS):
+                           for a, w, ri, ro in _ARCS):
                     continue
-            col = _color_at(n, r if _es_hueco(n, r) else rd)
+            # The core hole is not dithered: at r=3 the checkerboard reads as
+            # noise rather than as a transition.
+            col = _color_at(n, r if _is_hollow(n, r) else rd)
             if col is not None:
                 c.set(x, y, col)
     return c
 
 
-def _fragmentado(n: int) -> Canvas:
-    """Fotogramas 6-7: fragmentos sueltos colocados uno a uno."""
+def _fragmented(n: int) -> Canvas:
+    """Frames 6-7: loose fragments placed one by one."""
     c = Canvas(32, 32)
-    for nombre, ang, r in _FRAGMENTOS[n]:
-        rows = _PLANTILLAS[nombre]
+    for name, ang, r in _FRAGMENTS[n]:
+        rows = _TEMPLATES[name]
         h, w = len(rows), len(rows[0])
         px = round(CX + r * math.cos(math.radians(ang)) - (w - 1) / 2.0)
         py = round(CY - r * math.sin(math.radians(ang)) - (h - 1) / 2.0)
@@ -122,15 +124,15 @@ def _fragmentado(n: int) -> Canvas:
             for dx, ch in enumerate(row):
                 if ch == ".":
                     continue
-                # En el 6 el nucleo del fragmento aun tiene rojo claro; en el 7
-                # ya esta todo apagado a rojo.
-                col = ROJO_CLARO if (ch == "o" and n == 6) else ROJO
+                # On frame 6 the fragment core is still light red; on 7
+                # everything has cooled to red.
+                col = LIGHT_RED if (ch == "o" and n == 6) else RED
                 c.set(px + dx, py + dy, col)
     return c
 
 
 def _frame(n: int) -> Canvas:
-    return _radial(n) if n in _BANDS else _fragmentado(n)
+    return _radial(n) if n in _BANDS else _fragmented(n)
 
 
 def frames():
@@ -138,7 +140,7 @@ def frames():
 
 
 def max_radius(c: Canvas) -> float:
-    """Radio visible maximo respecto al pivote, para verify_assets.py."""
+    """Maximum visible radius from the pivot, for verify_assets.py."""
     best = 0.0
     for y in range(c.h):
         for x in range(c.w):
