@@ -1,0 +1,43 @@
+# Builds on detekt's default configuration (buildUponDefaultConfig = true).
+# Only justified deviations live here.
+build:
+  maxIssues: 0
+
+complexity:
+  LongParameterList:
+    # simulate(scenario, shooter, shot, wind, scratch) is the contract signature (§8).
+    # Composables take their state through parameters: that is the pattern, not a smell.
+    functionThreshold: 6
+    constructorThreshold: 8
+    ignoreAnnotated: ['Composable']
+  NestedBlockDepth:
+    # The calibration sweeps walk angle x power x wind: the nesting is the test space
+    # itself, not accidental complexity.
+    excludes: ['**/test/**']
+
+naming:
+  MatchingDeclarationName:
+    # File names are fixed by the specification: GameConstants.kt holds `object G`.
+    active: false
+
+  FunctionNaming:
+    # @Composable functions are PascalCase by Compose convention.
+    ignoreAnnotated: ['Composable']
+
+style:
+  ReturnCount:
+    # `if (!reader.has(n)) return null` is a guard clause, not a second exit path.
+    excludeGuardClauses: true
+  MagicNumber:
+    # Game constants live in GameConstants.kt; in tests and in the renderer the
+    # geometric literals read fine as they are. In Rng.kt and Trig.kt the numbers *are*
+    # the algorithm (xorshift shifts, 2^24, degrees to radians): naming them would make
+    # the code less readable, not more.
+    # `**/ui/**` and `**/render/**`: dp sizes, alpha values and grid offsets read better
+    # as literals at the point of use than behind a name.
+    excludes: ['**/test/**', '**/render/**', '**/ui/**', '**/Rng.kt', '**/Trig.kt']
+    # An enum like AiLevel(sigmaAngle, sigmaPower, refine) is a table of tuned values.
+    # Naming each one would only repeat the enum constant's own name.
+    ignoreEnums: true
+  MaxLineLength:
+    maxLineLength: 120

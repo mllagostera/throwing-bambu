@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="menu_one_player">Un jugador</string>
+    <string name="menu_two_players">Dos jugadors, mateix dispositiu</string>
+    <string name="menu_bluetooth">Jugar per Bluetooth</string>
+    <string name="menu_bluetooth_note">L\'aparellament per Bluetooth arriba a la propera fita.</string>
+    <string name="menu_settings">Configuració</string>
+
+    <string name="setup_title">Configuració de la partida</string>
+    <string name="setup_rounds">Al millor de 5 — guanya qui arribi a 3 rondes</string>
+    <string name="setup_start">Començar</string>
+    <string name="setup_start_fixed">Començar amb llavor fixa</string>
+
+    <string name="level_easy">Fàcil</string>
+    <string name="level_medium">Mitjà</string>
+    <string name="level_hard">Difícil</string>
+
+    <string name="game_angle">ANG</string>
+    <string name="game_power">POT</string>
+    <string name="game_repeat">Repetir</string>
+    <string name="game_throw">Llança!</string>
+    <string name="game_thinking">Pensant…</string>
+    <string name="game_your_turn">El teu torn</string>
+    <string name="game_player">Jugador %1$d</string>
+    <string name="game_score">J1 %1$d — %2$d J2</string>
+
+    <string name="result_winner">Guanya el jugador %1$d</string>
+    <string name="result_play_again">Una altra partida</string>
+    <string name="result_menu">Menú</string>
+
+    <string name="settings_title">Configuració</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_language_system">Idioma del sistema</string>
+    <string name="settings_back">Tornar</string>
+</resources>

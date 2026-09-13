@@ -1,0 +1,52 @@
+package dev.bambu.core
+
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * A4 (D-04): the scaled logical canvas can never be wider than the screen. The original
+ * version of `logicalWidth` failed on any phone held in portrait.
+ */
+class LayoutTest {
+    @Test
+    fun scaledCanvasAlwaysFitsOnScreen() {
+        for ((w, h) in REAL_SCREENS) {
+            for ((sw, sh) in listOf(w to h, h to w)) {
+                val scale = logicalScale(sw, sh)
+                val width = logicalWidth(sw, sh)
+                assertTrue("invalid scale at ${sw}x$sh: $scale", scale >= 1)
+                assertTrue(
+                    "canvas overflows the screen at ${sw}x$sh: ${width * scale} > $sw",
+                    width * scale <= sw,
+                )
+                assertTrue("height overflows at ${sw}x$sh", G.H * scale <= sh)
+                assertTrue("width outside the contract: $width", width in G.W_MIN..G.W_MAX)
+            }
+        }
+    }
+
+    @Test
+    fun scaleIsAnIntegerNumberOfPixels() {
+        // Whole pixels always (§0.4): no fractional scaling.
+        val scale = logicalScale(2400, 1080)
+        assertTrue(scale == 5)
+    }
+
+    private companion object {
+        val REAL_SCREENS =
+            listOf(
+                1080 to 1920,
+                1080 to 2400,
+                1080 to 2340,
+                1440 to 3120,
+                1440 to 2560,
+                720 to 1280,
+                720 to 1600,
+                800 to 1280,
+                1200 to 1920,
+                1600 to 2560,
+                2048 to 2732,
+                960 to 540,
+            )
+    }
+}

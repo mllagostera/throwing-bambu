@@ -25,6 +25,23 @@ replay_pid*
 
 # Kotlin Gradle plugin data, see https://kotlinlang.org/docs/whatsnew20.html#new-directory-for-kotlin-data-in-gradle-projects
 .kotlin/
+# --- Gradle / Android ---
+.gradle/
+build/
+local.properties
+captures/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+.idea/
+*.iml
+.DS_Store
+
+# The wrapper IS versioned: it is what pins the same Gradle version in CI.
+!gradle/wrapper/gradle-wrapper.jar
+
 # Python
 __pycache__/
 *.py[cod]

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- §12: requested at runtime ONLY when entering Bluetooth mode, never at startup. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" android:minSdkVersion="31" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" android:minSdkVersion="31" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:minSdkVersion="31" />
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:minSdkVersion="33" />
+    <!-- On API <= 30, Nearby's BLE scan requires FINE. COARSE must be declared alongside
+         FINE: from Android 12 the user may grant COARSE only, and without declaring it
+         lint itself flags an error (CoarseFineLocation). -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+
+</manifest>
