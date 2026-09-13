@@ -2,7 +2,7 @@
 
 Derivado de [`ESPEC_DESARROLLO.md`](ESPEC_DESARROLLO.md). La especificación es el **contrato**; este documento es el **plan de ejecución**: qué se construye, en qué orden, con qué criterio se da por terminado y qué hay que decidir antes de empezar.
 
-- **Versión del plan:** 1.1
+- **Versión del plan:** 1.2
 - **Base:** especificación §0–§18, con D-01…D-06 ya incorporadas
 - **Estimación total:** ~23 jornadas de desarrollo (1 persona, sin contar la entrega de Design ni pruebas de campo en M6)
 - **Hitos:** M0 → M7, secuenciales salvo lo indicado en §7 (paralelización)
@@ -46,7 +46,11 @@ La optimización que la especificación pide es real, pero pertenece a la IA, no
 
 ### ✅ D-03 — Anti-tunelado: el cálculo del §8 solo cubre la velocidad inicial — *aplicada (§8)*
 
-«220 px/s → 1,83 px por paso» solo vale para el primer paso. Un disparo alto acumula `vy` sin límite: a los 5 s de caída, `vy = 400 px/s` → **3,3 px/paso**; en el peor caso (15 s) supera los 9 px/paso. El muestreo puntual atraviesa istmos de terreno de 1–3 px entre cráteres, que es exactamente la geometría que produce el juego tras varios turnos.
+«220 px/s → 1,83 px por paso» solo describe el instante del lanzamiento: `vy` crece durante la caída y el viento sigue acelerando `vx`.
+
+**Corrección hecha en M1.** La primera redacción de esta decisión estimaba un techo de ~10 px/paso extrapolando 15 s de caída libre. Es falso: el proyectil sale del lienzo mucho antes de acumular esa velocidad. El barrido completo de ángulos, potencias, vientos y alturas de tejado da **2,50 px** de avance máximo por paso (2,05 horizontal, 2,32 vertical).
+
+La conclusión no cambia, pero el motivo sí: no se tunela una ventana de 3 px — se tunela un istmo de 1–2 px de los que deja el terreno tras varios cráteres, o se cruza una esquina en diagonal. El techo queda fijado por el test `stepAdvanceStaysBelowTheMeasuredCeiling`, que falla si alguien lo sube sin revisar esta decisión.
 
 **Propuesta:** recorrer el segmento `(x₀,y₀) → (x₁,y₁)` con DDA entero y comprobar `solid()` en cada píxel del trayecto. Coste: ≤10 comprobaciones por paso en el peor caso, cero en el habitual. El `impactX/impactY` pasa a ser el primer píxel sólido del segmento, no el extremo.
 
@@ -218,28 +222,38 @@ throwing-bambu/
 
 ---
 
-### M1 — Núcleo determinista (3 j) — *el hito que decide el proyecto*
+### M1 — Núcleo determinista ✅ *completado* — *el hito que decide el proyecto*
 
 **Objetivo:** física y generación de escenario correctas, deterministas y con los tests 1–9 en verde.
 
 | ID | Tarea | Est. | Depende |
 |---|---|---|---|
-| T-05 | `GameConstants.kt` (§2) + `Palette.kt` (D-08) | 0,15 j | — |
-| T-06 | `Rng.kt` xorshift64\* + `nextGaussian` robusto (D-09) + `windForTurn` | 0,3 j | T-05 |
-| T-07 | `Trig.kt`: tablas `SIN`/`COS` con `StrictMath`; prohibición de `sin`/`cos` verificada por test de arquitectura | 0,2 j | — |
-| T-08 | `Model.kt`: `Building`, `Terrain` (`solid`, `blast`, `fingerprint`), `Gorilla`, `Scenario`, `Shot`, `Outcome` (sin `HitSun`, D-02), `ShotResult` (con `sunHit`) | 0,4 j | T-05 |
-| T-09 | `Layout.kt`: `logicalWidth` corregido (D-04), compartido por `core` y render | 0,1 j | T-05 |
-| T-10 | `ScenarioGen.generate` (§7, pasos 1–9 en orden exacto) con la rejilla de ventanas de D-07 | 0,8 j | T-06, T-08 |
-| T-11 | `Physics.simulate` con DDA anti-tunelado (D-03), gracia de 5 pasos para el tirador, sol no bloqueante | 0,8 j | T-07, T-08 |
-| T-12 | Tests 15.1–15.9 + test de arquitectura (sin `android.*`, sin `Math.sin` en `core`) | 0,8 j | T-10, T-11 |
-| T-13 | Calibración: medir alcance y tiempo a 45°/68 y **corregir el §2** según D-05 | 0,15 j | T-12 |
+| ✅ T-05 | `GameConstants.kt` (§2) + `Palette.kt` (D-08) | 0,15 j | — |
+| ✅ T-06 | `Rng.kt` xorshift64\* + `nextGaussian` robusto (D-09) + `windForTurn` | 0,3 j | T-05 |
+| ✅ T-07 | `Trig.kt`: tablas `SIN`/`COS` con `StrictMath`; prohibición de `sin`/`cos` verificada por test de arquitectura | 0,2 j | — |
+| ✅ T-08 | `Model.kt`: `Building`, `Terrain` (`solid`, `blast`, `fingerprint`), `Gorilla`, `Scenario`, `Shot`, `Outcome` (sin `HitSun`, D-02), `ShotResult` (con `sunHit`) | 0,4 j | T-05 |
+| ✅ T-09 | `Layout.kt`: `logicalWidth` corregido (D-04), compartido por `core` y render | 0,1 j | T-05 |
+| ✅ T-10 | `ScenarioGen.generate` (§7, pasos 1–9 en orden exacto) con la rejilla de ventanas de D-07 | 0,8 j | T-06, T-08 |
+| ✅ T-11 | `Physics.simulate` con DDA anti-tunelado (D-03), gracia de 5 pasos para el tirador, sol no bloqueante | 0,8 j | T-07, T-08 |
+| ✅ T-12 | Tests 15.1–15.9 + test de arquitectura (sin `android.*`, sin `Math.sin` en `core`) | 0,8 j | T-10, T-11 |
+| ✅ T-13 | Calibración: medir alcance y tiempo a 45°/68 y **corregir el §2** según D-05 | 0,15 j | T-12 |
 
-**DoD:**
-- Los nueve tests del §15 en verde.
-- `generate(seed, w)` produce la misma huella de `mask` en 100 ejecuciones y en dos JVM distintas (se ejecuta el job de CI en `ubuntu-latest` y `macos-latest`).
-- Calibración documentada con la cifra medida, no con la estimada.
+**DoD:** ✅ los nueve tests del §15 en verde (34 tests en total con los añadidos), huella de `mask` estable en 100 ejecuciones y en dos JVM, calibración documentada con la cifra medida.
 
-**Riesgo:** si el test 15.4 (alcance a 45° con tolerancia 2 %) falla por el integrador de Euler explícito del §8, el margen teórico es de ~0,3 %, así que un fallo aquí señala un error de implementación, no de método. No cambiar el orden de integración sin medir antes.
+**Cifras medidas en M1** (sustituyen a toda estimación previa):
+
+| Magnitud | Analítico | Medido | Desvío |
+|---|---|---|---|
+| Alcance 45° / potencia 68 | 279,8 px | **281,2 px** | +0,52 % |
+| Tiempo de vuelo | 2,645 s | **2,658 s** (386 pasos) | +0,49 % |
+| Desplazamiento por viento ±10 | — | **±52,8 px**, simétrico a ±0,01 px | — |
+| Avance máximo por paso | 1,83 px *(estimación del §8)* | **2,50 px** (H 2,05 / V 2,32) | +37 % |
+
+El desvío del alcance y el tiempo es el error del integrador de Euler explícito, dentro del 2 % que exige el test §15.4.
+
+**La última fila obligó a corregir D-03**: la estimación de ~10 px/paso que yo mismo había escrito era falsa — el proyectil sale del lienzo antes de acumular esa velocidad. El DDA sigue siendo necesario, pero por los istmos de 1–2 px que deja el terreno tras los cráteres, no por velocidades altas. El techo está fijado por un test.
+
+**Decisiones consumidas:** D-01, D-02, D-03 (corregida), D-05, D-06, D-07, D-08, D-09.
 
 ---
 
@@ -349,15 +363,15 @@ throwing-bambu/
 
 | # (§15) | Descripción | Hito | Tarea |
 |---|---|---|---|
-| 1 | `Rng` reproduce la secuencia (valores fijados a mano) | M1 | T-12 |
-| 2 | `generate` idéntico en 100 ejecuciones (huella de `mask`) | M1 | T-12 |
-| 3 | Ningún tejado sobre `SKY_BAND`; gorilas en edificios distintos | M1 | T-12 |
-| 4 | Alcance a 45° ≈ `v²/g` ±2 % | M1 | T-12, T-13 |
-| 5 | Viento ±10 produce alcances simétricos | M1 | T-12 |
-| 6 | `blast()` borra exactamente el círculo | M1 | T-12 |
-| 7 | Impacto en el enemigo → `HitGorilla(oponente)` | M1 | T-12 |
-| 8 | 90° con potencia baja → autogol | M1 | T-12 |
-| 9 | `simulate` nunca excede `MAX_STEPS` ni escribe fuera de `path` | M1 | T-12 |
+| 1 | `Rng` reproduce la secuencia (valores fijados a mano) | M1 | ✅ T-12 |
+| 2 | `generate` idéntico en 100 ejecuciones (huella de `mask`) | M1 | ✅ T-12 |
+| 3 | Ningún tejado sobre `SKY_BAND`; gorilas en edificios distintos | M1 | ✅ T-12 |
+| ✅ 4 | Alcance a 45° ≈ `v²/g` ±2 % | M1 | T-12, T-13 |
+| 5 | Viento ±10 produce alcances simétricos | M1 | ✅ T-12 |
+| 6 | `blast()` borra exactamente el círculo | M1 | ✅ T-12 |
+| 7 | Impacto en el enemigo → `HitGorilla(oponente)` | M1 | ✅ T-12 |
+| 8 | 90° con potencia baja → autogol | M1 | ✅ T-12 |
+| 9 | `simulate` nunca excede `MAX_STEPS` ni escribe fuera de `path` | M1 | ✅ T-12 |
 | 10 | Round-trip de cada `Msg` | M5 | T-40 |
 | 11 | `MatchEngine` determinista con fuentes deterministas | M2 | T-15 |
 | 12 | Partida completa por loopback, mismo marcador | M5 | T-40 |
@@ -366,10 +380,10 @@ throwing-bambu/
 
 | # | Descripción | Hito | Motivo |
 |---|---|---|---|
-| A1 | `core` no referencia `android.*` ni `Math.sin`/`cos` | M1 | Reglas de oro §0.1 y §5 |
-| A2 | El gorila nunca es más ancho que su edificio (§17.4) | M1 | Fallo clásico, riesgo declarado |
-| A3 | Anti-tunelado: proyectil a 900 px/s contra un muro de 2 px → impacta | M1 | D-03 |
-| A4 | `logicalWidth` × escala ≤ ancho de pantalla en 12 resoluciones reales | M2 | D-04 |
+| ✅ A1 | `core` no referencia `android.*` ni `Math.sin`/`cos` | M1 | Reglas de oro §0.1 y §5 |
+| ✅ A2 | El gorila nunca es más ancho que su edificio (§17.4) | M1 | Fallo clásico, riesgo declarado |
+| ✅ A3 | Anti-tunelado: proyectil a 900 px/s contra un muro de 2 px → impacta | M1 | D-03 |
+| ✅ A4 | `logicalWidth` × escala ≤ ancho de pantalla en 12 resoluciones reales | M2 | D-04 |
 | A5 | El `path` publicado por `MatchEvent` no se altera tras el siguiente turno | M2 | D-01 |
 | A6 | `Codec` rechaza versión ≠ `0x01` y cuerpos truncados sin lanzar excepción no controlada | M5 | Robustez de red |
 | A7 | `SHOT` con `turn` inesperado se descarta y no bloquea el motor | M5 | §12 |
@@ -426,5 +440,6 @@ No entran en M0–M7 y no se empiezan «de paso»:
 
 1. ~~Resolver D-01 a D-06~~ — hecho: aplicadas a la especificación.
 2. ~~Ejecutar **M0** y dejar CI verde~~ — en curso.
-3. Confirmar **D-07, D-08 y D-09** antes de empezar `ScenarioGen` y `Rng`: las tres cambian el número o el orden de llamadas al RNG, así que tocarlas después de M1 invalida todas las semillas.
-4. Atacar **M1**, que es el hito donde se juega el proyecto: si el determinismo no está resuelto ahí, aparece como bug de red en M6 y cuesta diez veces más.
+3. ~~Confirmar D-07, D-08 y D-09~~ — aplicadas tal y como se propusieron. El orden de llamadas al RNG queda congelado: cambiarlo a partir de aquí invalida todas las semillas.
+4. ~~**M1**~~ — completado: 34 tests en verde y las cifras de calibración medidas.
+5. Siguiente: **M2** (render geométrico y hot-seat), que ya no depende de ninguna decisión abierta. Quedan pendientes D-10 y D-11, que se consumen en M5.

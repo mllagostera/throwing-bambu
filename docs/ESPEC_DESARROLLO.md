@@ -70,7 +70,9 @@ object G {
 
 **Calibración esperada** (verificar en M1): un disparo a 45° con potencia 68 debe recorrer **~280 px** y durar **~2,65 s**.
 
-Derivación, para que nadie la vuelva a estimar a ojo: `v = 68 × POWER_TO_SPEED = 149,6 px/s`; alcance `v²·sin(2θ)/g = 149,6²/80 = 279,8 px`; tiempo `2·v·sin45°/g = 2,645 s`. El test §15.4 exige ±2 %, así que la cifra de referencia es **279,8 px**, no una redondeada al alza. Si la medición no cuadra con esto, el fallo está en la implementación, no en `GRAVITY`.
+Derivación, para que nadie la vuelva a estimar a ojo: `v = 68 × POWER_TO_SPEED = 149,6 px/s`; alcance `v²·sin(2θ)/g = 149,6²/80 = 279,8 px`; tiempo `2·v·sin45°/g = 2,645 s`.
+
+**Medido en M1** con el integrador del §8: alcance **281,2 px** (+0,52 % sobre el valor analítico, dentro del 2 % que exige el test §15.4) y tiempo **2,658 s** (386 pasos). La diferencia es el error del integrador de Euler, no un fallo. Si una medición futura se aleja de estas cifras, el fallo está en la implementación, no en `GRAVITY`.
 
 ---
 
@@ -282,7 +284,9 @@ Detalles no negociables:
 - **El plátano no colisiona con el sol en sentido físico.** El sol cambia de expresión y el proyectil sigue. Es un detalle del original.
 - **Colisión con gorila:** AABB de `GORILLA_W × GORILLA_H` centrado en `(g.x, g.roofY - GORILLA_H/2)`, expandido por `BANANA_R`.
 - **Autocolisión inicial:** el punto de partida está fuera del AABB propio por diseño (`HAND_DX = 10 > GORILLA_W/2 + BANANA_R = 11`)… **corrección: 10 < 11**. Subir `HAND_DX` a **12** o ignorar la colisión con el tirador durante los primeros 5 pasos. Elegir lo segundo, que es más robusto frente a ángulos altos.
-- **Anti-tunelado por muestreo de segmento.** El cálculo «220 px/s → 1,83 px por paso» solo vale para el primer paso: `vy` crece sin límite mientras dura el vuelo, y a los 5 s ya son 400 px/s (3,3 px/paso), con un techo de ~10 px/paso a los 15 s. Tras varios cráteres el terreno deja istmos de 1–3 px, que es exactamente lo que un muestreo puntual atraviesa. Por tanto, la comprobación contra el terreno recorre el segmento `(x₀,y₀) → (x₁,y₁)` con un DDA entero y evalúa `solid()` en **cada píxel del trayecto**; `impactX/impactY` es el **primer** píxel sólido del segmento, no el extremo del paso. Coste: una comprobación por paso en el caso habitual, ≤10 en el peor.
+- **Anti-tunelado por muestreo de segmento.** El cálculo «220 px/s → 1,83 px por paso» solo describe el instante del lanzamiento: `vy` crece durante la caída y el viento sigue acelerando `vx`. Barriendo todos los ángulos, potencias, vientos y alturas de tejado, el avance real por paso llega a **2,50 px** (2,05 horizontal, 2,32 vertical) — medido, no estimado, y fijado por un test.
+
+  Eso no llega a atravesar una ventana de 3 px, pero sí basta para saltarse un istmo de 1–2 px, que es justo lo que deja el terreno tras varios cráteres, o para colarse por una esquina en diagonal. Por tanto, la comprobación contra el terreno recorre el segmento `(x₀,y₀) → (x₁,y₁)` con un DDA entero y evalúa `solid()` en **cada píxel del trayecto**; `impactX/impactY` es el **primer** píxel sólido del segmento, no el extremo del paso. Coste: una o dos comprobaciones por paso.
 - Tras `HitTerrain` o `HitGorilla`, el llamador aplica `terrain.blast(impactX, impactY, CRATER_R)`. La física **no** muta el terreno.
 
 ---

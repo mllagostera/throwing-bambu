@@ -11,7 +11,7 @@ Juego de artillería por turnos para Android: dos gorilas, un skyline destructib
 
 ## Estado
 
-**M0 completado**: esqueleto Gradle de tres módulos, catálogo de versiones, ktlint + detekt y CI. Las decisiones D-01 a D-06 del plan ya están aplicadas a la especificación. Siguiente hito: **M1** (RNG, trigonometría, generación de escenario y física).
+**M1 completado**: núcleo determinista en `:core` — RNG xorshift64\*, tablas trigonométricas, generación de escenario, física con muestreo de segmento y 34 tests, incluidos los nueve obligatorios del §15. Siguiente hito: **M2** (render geométrico y partida local a dos jugadores).
 
 ## Construir y probar
 

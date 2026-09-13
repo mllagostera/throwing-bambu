@@ -60,6 +60,39 @@ class NoAndroidDependenciesTest {
         }
 
     /**
+     * A1 (§5): la ruta de simulación no llama a trigonometría.
+     *
+     * `Math.sin` no garantiza el mismo resultado bit a bit entre implementaciones de JVM,
+     * y una divergencia de un ULP en el ángulo de salida se amplifica a lo largo del vuelo
+     * hasta cambiar el ganador de la ronda. Solo `Trig.kt` (tablas precalculadas con
+     * `StrictMath`) y `Rng.kt` (Box-Muller, fuera de la ruta de simulación) pueden usarla.
+     */
+    @Test
+    fun simulationPathDoesNotCallTrigonometry() {
+        val sources = File("src/main/kotlin")
+        if (!sources.isDirectory) return
+
+        val allowed = setOf("Trig.kt", "Rng.kt")
+        val call = Regex("""\b(sin|cos|tan)\s*\(""")
+
+        val offenders =
+            sources
+                .walkTopDown()
+                .filter { it.isFile && it.name.endsWith(".kt") && it.name !in allowed }
+                .filter { file ->
+                    file.readLines().any { line ->
+                        val code = line.substringBefore("//")
+                        call.containsMatchIn(code)
+                    }
+                }.map { it.name }
+                .toList()
+
+        if (offenders.isNotEmpty()) {
+            fail("Trigonometría fuera de Trig.kt/Rng.kt: $offenders. Usa las tablas SIN/COS.")
+        }
+    }
+
+    /**
      * Busca la secuencia en el pool de constantes sin parsear el .class.
      * ISO-8859-1 mapea cada byte a un char 1:1, así que la búsqueda de una cadena
      * ASCII sobre el volcado es exacta.
