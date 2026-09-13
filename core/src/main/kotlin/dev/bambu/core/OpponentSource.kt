@@ -51,16 +51,20 @@ class HumanShotSource : ShotSource {
 class ScriptedShotSource(
     private val shots: List<Shot>,
 ) : ShotSource {
-    private var index = 0
-
+    /**
+     * Indexed by turn, not by how many times it has been asked.
+     *
+     * The difference matters when a match is replayed: a call counter would hand out the
+     * start of the script again on the first live turn, and the resumed match would
+     * quietly diverge from the one it is meant to be continuing.
+     */
     override suspend fun nextShot(
         scenario: Scenario,
         me: Int,
         wind: Int,
         turn: Int,
     ): Shot {
-        val shot = shots[index % shots.size]
-        index++
+        val shot = shots[turn % shots.size]
         return Shot(turn, shot.angle, shot.power)
     }
 }
@@ -153,5 +157,45 @@ class SendingShotSource(
         val shot = local.nextShot(scenario, me, wind, turn)
         transport.send(Msg.ShotMsg(shot.turn, shot.angle, shot.power))
         return shot
+    }
+}
+
+/**
+ * Replays shots that were already played, then hands over to the live source.
+ *
+ * This is how a match resumes after a dropped link (§12, D-10). Rather than restoring a
+ * snapshot of the terrain and the score — which would need a second, parallel notion of
+ * what the state *is*, and a way to serialise it — the engine simply plays the recorded
+ * shots again. Determinism makes them land exactly where they landed the first time, so
+ * the rebuilt match is the same match, by construction rather than by agreement.
+ *
+ * Replayed turns produce the same events as live ones. The UI skips their animations;
+ * the engine cannot tell the difference, and should not.
+ */
+class ReplayingShotSource(
+    private val history: List<Shot>,
+    private val live: ShotSource,
+) : ShotSource {
+    /**
+     * The first turn this source has **not** replayed yet.
+     *
+     * Deliberately a turn number rather than a count of what is left: a source only ever
+     * sees its own player's turns, so counting its own leftovers would leave the other
+     * player's source permanently one behind. Turns are global, so the highest of these
+     * across both sources is how far the match as a whole has caught up.
+     */
+    var caughtUpTo: Int = 0
+        private set
+
+    override suspend fun nextShot(
+        scenario: Scenario,
+        me: Int,
+        wind: Int,
+        turn: Int,
+    ): Shot {
+        val recorded = history.firstOrNull { it.turn == turn }
+        if (recorded == null) return live.nextShot(scenario, me, wind, turn)
+        caughtUpTo = turn + 1
+        return recorded
     }
 }

@@ -95,9 +95,7 @@ class RemoteMatchTest {
         transport = link,
         localPlayer = localPlayer,
         localSource = ScriptedShotSource(SCRIPT),
-        seed = SEED,
-        width = G.W_MIN,
-        roundsToWin = 2,
+        config = MatchConfig(seed = SEED, width = G.W_MIN, roundsToWin = 2),
     )
 
     /**

@@ -26,7 +26,7 @@ Operating rule: **no task closes without its test or its described manual check*
 
 The specification was solid, but it held **twelve points that could not be implemented as written**. Each carries a concrete proposal.
 
-**Status:** ✅ **D-01 to D-09 and D-12 are applied** to `DEVELOPMENT_SPEC.md`; the text is kept here as the record of the decision and its reason. 🟡 D-10 and D-11 are still open and get consumed in M5.
+**Status:** ✅ **D-01 to D-09 and D-12 are applied** to `DEVELOPMENT_SPEC.md`; the text is kept here as the record of the decision and its reason. 🟡 D-11 is still open; D-10 was consumed by T-46.
 
 ### ✅ D-01 — Pooling `path` is incompatible with `MatchEvent` — *applied (§6, §8, §9, §11)*
 
@@ -80,11 +80,16 @@ The count matters: five instead of six changes how much the RNG consumes and the
 
 Box-Muller with `ln(u1)` blows up if `nextFloat()` returns exactly 0.0 — with 24 bits of mantissa, once every 16.7 M draws. With the AI calling it twice per turn that is a crash every ~8 M turns: rare, not impossible, and very hard to diagnose. Applied: resample, never add an epsilon.
 
-### 🟡 D-10 — The protocol: `HELLO` without `width`, and no way to resume
+### ✅ D-10 — The protocol: `HELLO` without `width`, and no way to resume
 
 §12 requires negotiating `width` in `HELLO` ("add `u16 width`"), but the table did not show it. And the M6 criterion asks for "reconnection after 10 s without a link" with no message capable of recovering the state.
 
-Proposal, already reflected in the specification's table: `HELLO` carries `u16 width` and `u8 caps`; `0x08 RESUME { i64 seed, u16 nextTurn }` and `0x09 HISTORY { u16 n, n×(u16 turn, u8 angle, u8 power) }` are added. Determinism makes resuming trivial: the shot history is enough to rebuild the state. **Consumed in M5/M6.**
+Proposal, already reflected in the specification's table: `HELLO` carries `u16 width` and `u8 caps`; `0x08 RESUME { i64 seed, u16 nextTurn }` and `0x09 HISTORY { u16 n, n×(u16 turn, u8 angle, u8 power) }` are added. Determinism makes resuming trivial: the shot history is enough to rebuild the state.
+**Consumed in T-46.** `resyncHistory()` asks and merges, `RemoteMatch(resumeFrom = …)` replays;
+`nextTurn` is the first *gap* in what the asker holds, not its highest turn, so a hole in the
+middle is filled rather than left to stall the replay. A `RESUME` carrying another seed is
+answered with `BYE(PROTOCOL_ERROR)`: handing over this match's shots would look like a
+determinism bug rather than like the mismatch it is.
 
 ### 🟡 D-11 — `RESULT`: who sends it and what is adopted
 
@@ -332,7 +337,7 @@ The truncation test is exhaustive rather than representative — **every prefix 
 | T-43 | `NearbyTransport` with `P2P_POINT_TO_POINT`: advertise, discover, connect, `BYTES` payloads, callbacks mapped to `Flow`/`StateFlow` | 1.2 d |
 | T-44 | Permission flow: explanatory screen **before** the system dialog, requested only when entering Bluetooth mode, readable error states for denied permission / Bluetooth off / location disabled on ≤ API 30, and "COARSE only" treated as valid (D-12) | 0.8 d |
 | T-45 | Pairing UI: host/guest, peer list with nicknames, link state, cancellation | 0.7 d |
-| T-46 | Reconnection: `RESUME` + `HISTORY` (D-10), deterministic state rebuild, resume on the right turn | 0.8 d |
+| ✅ T-46 | Reconnection: `RESUME` + `HISTORY` (D-10), deterministic state rebuild, resume on the right turn | 0.8 d |
 | T-47 | Testing on two physical devices, including the 10 s link drop from the acceptance criterion | 0.5 d |
 
 **DoD:** a full match between two physical devices, with a 10 s disconnection in the middle and correct resumption, `divergences == 0`. Denying each permission produces a specific message, never a silent `catch`.
@@ -384,7 +389,7 @@ The truncation test is exhaustive rather than representative — **every prefix 
 | A6 | The `path` published in a `MatchEvent` is not altered by the next turn | M1 | ✅ |
 | A7 | `Codec` rejects version ≠ `0x01` and truncated bodies without an uncaught exception | M5 | ✅ |
 | A8 | A `SHOT` with an unexpected `turn` is discarded and does not stall the engine | M5 | ✅ |
-| A9 | Resumption: applying `HISTORY` rebuilds a state identical to the uninterrupted one | M6 | ⏳ |
+| A9 | Resumption: applying `HISTORY` rebuilds a state identical to the uninterrupted one | M6 | ✅ |
 
 ---
 
@@ -436,4 +441,4 @@ Not part of M0–M7, and not to be started "while we are at it":
 
 Play the debug APK and confirm M2 on a real screen: that is the one part of its DoD this environment cannot check.
 
-After that, **M3** (AI) and **M5** (transport) are both unblocked and independent of each other — M3 only touches `core`, M5 only touches `transport`. D-10 and D-11 stay open until M5.
+After that, **M3** (AI) and **M5** (transport) are both unblocked and independent of each other — M3 only touches `core`, M5 only touches `transport`. D-11 stays open until M5; D-10 is consumed by T-46.

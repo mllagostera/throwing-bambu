@@ -3,6 +3,19 @@ package dev.bambu.core.net
 import dev.bambu.core.Outcome
 import dev.bambu.core.Shot
 
+/**
+ * What the host decides and the guest accepts: exactly the body of `MATCH_START`.
+ *
+ * These four travel together over the wire and are the four a match needs to be
+ * reproducible, so they are one value rather than four arguments.
+ */
+data class MatchConfig(
+    val seed: Long,
+    val width: Int,
+    val roundsToWin: Int = 3,
+    val startingPlayer: Int = 0,
+)
+
 /** Protocol version carried in byte 0 of every frame (§12). */
 const val PROTOCOL_VERSION: Byte = 0x01
 

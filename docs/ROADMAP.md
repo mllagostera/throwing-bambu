@@ -48,15 +48,17 @@ because determinism cannot be verified on a single JVM.
 ### M6 — Play against another device (~4 d)
 
 The one thing the game cannot do yet. The hard part is already built and tested: the
-protocol, the loopback and the networked match all run on a plain JVM. What M6 adds is
-the radio underneath them and the screens around them.
+protocol, the loopback, the networked match and reconnection all run on a plain JVM.
+What M6 adds is the radio underneath them and the screens around them.
 
 - `NearbyTransport` over Nearby Connections.
 - Permission flow: an explanatory screen before the system dialog, requested only when
   entering Bluetooth mode, with a specific message per denial. "COARSE location only" has
   to be treated as a valid grant, not a refusal (D-12).
 - Pairing UI: host or guest, peer list, link state.
-- Reconnection after a drop, by replaying the shot history (D-10).
+- ~~Reconnection after a drop, by replaying the shot history (D-10).~~ Done: `RESUME`
+  asks, `HISTORY` answers, and the engine replays. What is left is only the part that
+  needs a radio — noticing the drop and dialling back.
 - Adopting the peer's `RESULT` on a divergence (D-11), which needs real latency to be
   worth implementing.
 
