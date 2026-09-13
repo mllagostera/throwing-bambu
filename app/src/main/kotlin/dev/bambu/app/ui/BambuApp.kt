@@ -2,11 +2,16 @@ package dev.bambu.app.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -20,7 +25,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -119,29 +127,124 @@ private fun MenuScreen(
     onOnePlayer: () -> Unit,
     onTwoPlayers: () -> Unit,
 ) {
-    Column(
+    // Landscape is the only orientation this game runs in (D-04), so the menu is laid
+    // out for it: logo on one side, choices on the other. Stacking them vertically left
+    // the last button — online play — pushed off the bottom of the screen.
+    ScreenScaffold { wide ->
+        val buttons: @Composable ColumnScope.() -> Unit = {
+            MenuButton("One player", onClick = onOnePlayer)
+            MenuButton("Two players, same device", onClick = onTwoPlayers)
+            MenuButton("Play over Bluetooth", enabled = false, onClick = {})
+            Text(
+                text = "Bluetooth pairing arrives in the next milestone.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        if (wide) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+            ) {
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    PixelLogo(maxWidth = 320.dp, maxHeight = 160.dp)
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    content = buttons,
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                PixelLogo(maxWidth = 280.dp, maxHeight = 120.dp)
+                buttons()
+            }
+        }
+    }
+}
+
+/**
+ * The logo at a whole-number scale.
+ *
+ * `ContentScale.FillWidth` would stretch it to whatever fraction the screen happens to
+ * need, which is the one thing this game does not do to a sprite (§0.4). Here the
+ * largest integer multiple that fits is chosen instead, so every source pixel stays a
+ * square block.
+ */
+@Composable
+private fun PixelLogo(
+    maxWidth: Dp,
+    maxHeight: Dp,
+) {
+    val logo = rememberGameSprites().logo
+    val density = LocalDensity.current
+    val scale =
+        with(density) {
+            minOf(
+                (maxWidth.toPx() / logo.width).toInt(),
+                (maxHeight.toPx() / logo.height).toInt(),
+            ).coerceAtLeast(1)
+        }
+    Image(
+        painter = BitmapPainter(image = logo, filterQuality = FilterQuality.None),
+        contentDescription = "Throwing Bambu",
         modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            Modifier.size(
+                width = with(density) { (logo.width * scale).toDp() },
+                height = with(density) { (logo.height * scale).toDp() },
+            ),
+    )
+}
+
+/** Menu choices share a width so they read as one list rather than three sizes. */
+@Composable
+private fun MenuButton(
+    label: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        // The delivered logo, scaled by a whole number with no filtering, like everything
-        // else in this game.
-        Image(
-            painter =
-                androidx.compose.ui.graphics.painter.BitmapPainter(
-                    image = rememberGameSprites().logo,
-                    filterQuality = FilterQuality.None,
-                ),
-            contentDescription = "Throwing Bambu",
-            contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth(0.8f),
-        )
-        Button(onClick = onOnePlayer) { Text("One player") }
-        Button(onClick = onTwoPlayers) { Text("Two players, same device") }
-        Button(onClick = {}, enabled = false) { Text("Bluetooth (M6)") }
+        Text(label)
+    }
+}
+
+/**
+ * Centres a screen's content, keeps a margin, and scrolls if it still does not fit.
+ *
+ * The scroll is the safety net: a 360 dp-tall landscape phone is not much room, and a
+ * button that cannot be reached is worse than one that has to be scrolled to.
+ */
+@Composable
+private fun ScreenScaffold(content: @Composable (wide: Boolean) -> Unit) {
+    // The constraints are read *outside* the scroll on purpose: inside one, the
+    // available height is infinite, so `maxWidth > maxHeight` would always be false and
+    // every screen would lay itself out as if it were in portrait.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val wide = maxWidth > maxHeight
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            content(wide)
+        }
     }
 }
 
@@ -152,33 +255,32 @@ private fun SetupScreen(
 ) {
     var level by remember { mutableStateOf(AiLevel.MEDIUM) }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text("Match setup", style = MaterialTheme.typography.headlineSmall)
-        Text("Best of 5 — first to 3 rounds")
+    ScreenScaffold {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("Match setup", style = MaterialTheme.typography.headlineSmall)
+            Text("Best of 5 — first to 3 rounds")
 
-        if (solo) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (option in AiLevel.entries) {
-                    FilterChip(
-                        selected = option == level,
-                        onClick = { level = option },
-                        label = { Text(option.name) },
-                    )
+            if (solo) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (option in AiLevel.entries) {
+                        FilterChip(
+                            selected = option == level,
+                            onClick = { level = option },
+                            label = { Text(option.name) },
+                        )
+                    }
                 }
             }
-        }
 
-        val chosen = if (solo) level else null
-        Button(onClick = { onStart(System.currentTimeMillis(), 3, chosen) }) { Text("Start") }
-        // A known seed makes a bug reproducible: the same match, shot for shot.
-        Button(onClick = { onStart(FIXED_SEED, 3, chosen) }) { Text("Start with a fixed seed") }
+            val chosen = if (solo) level else null
+            Button(onClick = { onStart(System.currentTimeMillis(), 3, chosen) }) { Text("Start") }
+            // A known seed makes a bug reproducible: the same match, shot for shot.
+            Button(onClick = { onStart(FIXED_SEED, 3, chosen) }) { Text("Start with a fixed seed") }
+        }
     }
 }
 
@@ -188,17 +290,16 @@ private fun ResultScreen(
     onPlayAgain: () -> Unit,
     onMenu: () -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text("Player ${winner + 1} wins", style = MaterialTheme.typography.headlineMedium)
-        Button(onClick = onPlayAgain) { Text("Play again") }
-        Button(onClick = onMenu) { Text("Menu") }
+    ScreenScaffold {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("Player ${winner + 1} wins", style = MaterialTheme.typography.headlineMedium)
+            Button(onClick = onPlayAgain) { Text("Play again") }
+            Button(onClick = onMenu) { Text("Menu") }
+        }
     }
 }
 
