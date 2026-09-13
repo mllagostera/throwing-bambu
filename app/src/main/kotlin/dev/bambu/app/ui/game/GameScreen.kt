@@ -36,6 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.bambu.app.render.GameCanvas
 import dev.bambu.app.render.GameFrame
 import dev.bambu.app.render.rememberGameSprites
+import dev.bambu.core.AiLevel
 import dev.bambu.core.G
 import dev.bambu.core.logicalWidth
 
@@ -49,6 +50,7 @@ import dev.bambu.core.logicalWidth
 fun GameScreen(
     seed: Long,
     roundsToWin: Int,
+    aiLevel: AiLevel?,
     onFinished: (winner: Int) -> Unit,
     viewModel: GameViewModel = viewModel(),
 ) {
@@ -62,7 +64,7 @@ fun GameScreen(
 
         LaunchedEffect(seed, screenW, screenH) {
             if (screenW > 0 && screenH > 0) {
-                viewModel.start(seed, logicalWidth(screenW, screenH), roundsToWin)
+                viewModel.start(seed, logicalWidth(screenW, screenH), roundsToWin, aiLevel)
             }
         }
 
@@ -121,7 +123,12 @@ private fun Hud(
             style = MaterialTheme.typography.titleMedium,
         )
         Text(
-            text = "Player ${state.currentPlayer + 1}",
+            text =
+                when {
+                    state.waitingForAi -> "Thinking…"
+                    state.currentPlayer in state.humanPlayers && state.humanPlayers.size == 1 -> "Your turn"
+                    else -> "Player ${state.currentPlayer + 1}"
+                },
             color = Color.White,
             style = MaterialTheme.typography.titleMedium,
         )

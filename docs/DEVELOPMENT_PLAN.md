@@ -5,7 +5,7 @@ Derived from [`DEVELOPMENT_SPEC.md`](DEVELOPMENT_SPEC.md). The specification is 
 - **Plan version:** 2.0 (English, retheme applied)
 - **Base:** specification §0–§18, with D-01…D-09 and D-12 already incorporated
 - **Estimate:** ~23 developer-days for the whole project (1 person; excludes physical-device testing in M6)
-- **Status:** M0, M1 complete; M2 and M4 code complete. Next: M3 or M5.
+- **Status:** M0, M1, M3 complete; M2 and M4 code complete. Next: M5.
 
 ---
 
@@ -238,18 +238,28 @@ The drift in range and time is the error of the explicit Euler integrator, insid
 
 ---
 
-### M3 — AI and one-player mode (2 d)
+### M3 — AI and one-player mode ✅ *complete*
 
 | ID | Task | Est. | Depends on |
 |---|---|---|---|
-| T-22 | `AiOpponent`: 16×17 = 272 coarse search, score by Euclidean distance to the enemy centre, maximum penalty for `OffScreen`/`TimeOut`/own goal | 0.5 d | M1 |
-| T-23 | ±4/±4 step-1 refinement and per-level Gaussian noise (`EASY`/`MEDIUM`/`HARD`) | 0.3 d | T-22 |
-| T-24 | `simulateInto` over a reusable arena (D-01) + `Dispatchers.Default` + artificial 600–1200 ms delay | 0.3 d | T-22 |
-| T-25 | Wire up one-player mode: level selection in match setup | 0.2 d | M2, T-23 |
-| T-26 | **AI evaluation harness**: 200 generated scenarios, measures turns-to-hit per level; runs as a long test tagged `@Tag("slow")`, outside CI by default | 0.5 d | T-23 |
-| T-27 | Tune the sigmas if T-26 misses the criterion | 0.2 d | T-26 |
+| ✅ T-22 | `AiOpponent`: 16×17 = 272 coarse search, score by Euclidean distance to the enemy centre, maximum penalty for `OffScreen`/`TimeOut`/own goal | 0.5 d | M1 |
+| ✅ T-23 | ±4/±4 step-1 refinement and per-level Gaussian noise (`EASY`/`MEDIUM`/`HARD`) | 0.3 d | T-22 |
+| ✅ T-24 | `simulateInto` over a reusable arena (D-01) + `Dispatchers.Default` + artificial 600–1200 ms delay | 0.3 d | T-22 |
+| ✅ T-25 | Wire up one-player mode: level selection in match setup | 0.2 d | M2, T-23 |
+| ✅ T-26 | **AI evaluation harness**: 200 generated scenarios, measures turns-to-hit per level; runs as a long test tagged `@Tag("slow")`, outside CI by default | 0.5 d | T-23 |
+| ➖ T-27 | Tune the sigmas if T-26 misses the criterion | 0.2 d | not needed: the criterion was met first time |
 
-**DoD:** the T-26 harness reports **HARD hitting within ≤3 turns in ≥80 % of scenarios**. The number goes in the commit; without the harness there is no acceptance criterion, only an impression.
+**DoD:** ✅ measured over 200 generated scenarios, with the crater applied after each miss exactly as the engine does:
+
+| Level | Hits within ≤3 turns | Mean turns |
+|---|---|---|
+| EASY | 41 % | 2.52 |
+| MEDIUM | 73 % | 2.08 |
+| **HARD** | **87 %** | **1.66** |
+
+The criterion was 80 % for HARD, so the sigmas in §9 stand as written and T-27 was not needed. The harness lives in `core/src/test/.../slow/` and stays out of CI by default; run it with `./gradlew :core:test -PrunSlowTests` whenever the AI changes.
+
+The ladder climbing is asserted too, not just the top rung: an AI whose difficulty levels do not separate is not a difficulty setting.
 
 **Scope decision confirmed:** no analytical ballistics solution (§9). The search costs milliseconds and tolerates wind and intervening buildings.
 
@@ -361,15 +371,14 @@ The art is already delivered in `art/` and passes `tools/verify_assets.py`. This
 ## 7. Critical path and parallelism
 
 ```
-M0 ──► M1 ──┬──► M2 ──┬──► M3 ──► (one-player mode ready)
-     ✅       ✅       │         │
-                      │         └──► M5 ──► M6 ──► M7
+M0 ──► M1 ──┬──► M2 ──┬──► M3 ✅ (one-player mode playable)
+     ✅       ✅   ✅   │
+                      ├──► M4 ✅ (sprites integrated)
                       │
-                      └──► M4 (art already delivered; integrates on top of M2)
+                      └──► M5 ──► M6 ──► M7
 ```
 
-- **Critical path:** M2 → M5 → M6 → M7 ≈ 14 d remaining.
-- **M3 can run in parallel** with M5 if there are two people: the AI only touches `core`, the transport only touches `transport`.
+- **Critical path:** M5 → M6 → M7 ≈ 11 d remaining.
 - **M4 no longer blocks anything** — the art is in the repository — but it still needs M2's renderer underneath.
 - **Point of no return:** already passed. Any change to `G`, to the RNG order or to the window geometry now invalidates seeds; after M5 it also breaks cross-device play and requires a protocol version bump.
 

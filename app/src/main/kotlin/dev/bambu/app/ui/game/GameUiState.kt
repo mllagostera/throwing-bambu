@@ -36,6 +36,11 @@ data class GameUiState(
     val lastShots: Map<Int, Shot> = emptyMap(),
     val roundWinner: Int? = null,
     val matchWinner: Int? = null,
+    /** Which seats a person is sitting in; the rest are driven by the AI. */
+    val humanPlayers: Set<Int> = setOf(0, 1),
 ) {
-    val canAim: Boolean get() = phase == GamePhase.AIMING
+    /** Aiming is only offered when it is a person's turn: the AI aims for itself. */
+    val canAim: Boolean get() = phase == GamePhase.AIMING && currentPlayer in humanPlayers
+
+    val waitingForAi: Boolean get() = phase == GamePhase.AIMING && currentPlayer !in humanPlayers
 }

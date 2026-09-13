@@ -4,10 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.bambu.app.render.PandaFrame
 import dev.bambu.app.render.TerrainBitmap
+import dev.bambu.core.AiLevel
+import dev.bambu.core.AiOpponent
+import dev.bambu.core.AiShotSource
 import dev.bambu.core.HumanShotSource
 import dev.bambu.core.MatchEngine
 import dev.bambu.core.MatchEvent
 import dev.bambu.core.Outcome
+import dev.bambu.core.Rng
 import dev.bambu.core.Shot
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,7 +35,7 @@ class GameViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
-    private val sources = listOf(HumanShotSource(), HumanShotSource())
+    private val human = HumanShotSource()
     private val animator = MatchAnimator(_uiState, viewModelScope)
     private var engine: MatchEngine? = null
     private var job: Job? = null
@@ -42,13 +46,29 @@ class GameViewModel : ViewModel() {
             animator.speedMultiplier = value
         }
 
-    /** Starts the match. Calling it twice is a no-op: the running match wins. */
+    /**
+     * Starts the match. Calling it twice is a no-op: the running match wins.
+     *
+     * [aiLevel] decides the mode: `null` seats two people at the same device, anything
+     * else puts the AI in the second seat. Both go through the same engine and the same
+     * loop — only where the shots come from changes (§10).
+     */
     fun start(
         seed: Long,
         width: Int,
         roundsToWin: Int,
+        aiLevel: AiLevel? = null,
     ) {
         if (engine != null) return
+
+        val sources =
+            if (aiLevel == null) {
+                listOf(human, HumanShotSource())
+            } else {
+                listOf(human, AiShotSource(AiOpponent(aiLevel, Rng(seed))))
+            }
+        _uiState.update { it.copy(humanPlayers = if (aiLevel == null) setOf(0, 1) else setOf(0)) }
+
         val created = MatchEngine(seed, width, sources, roundsToWin)
         engine = created
         job = viewModelScope.launch { created.events.collect { handle(it) } }
@@ -63,7 +83,7 @@ class GameViewModel : ViewModel() {
         val state = _uiState.value
         if (!state.canAim) return
         viewModelScope.launch {
-            sources[state.currentPlayer].submit(Shot(state.turn, angle, power))
+            human.submit(Shot(state.turn, angle, power))
         }
     }
 

@@ -3,14 +3,20 @@ package dev.bambu.app.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
@@ -22,6 +28,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import dev.bambu.app.render.rememberGameSprites
 import dev.bambu.app.ui.game.GameScreen
+import dev.bambu.core.AiLevel
 
 /**
  * Navigation (§14): `Menu → [mode] → Setup → Game → Result`.
@@ -36,21 +43,32 @@ fun BambuApp(navController: NavHostController = rememberNavController()) {
         Surface(modifier = Modifier.fillMaxSize()) {
             NavHost(navController = navController, startDestination = Routes.MENU) {
                 composable(Routes.MENU) {
-                    MenuScreen(onTwoPlayers = { navController.navigate(Routes.SETUP) })
+                    MenuScreen(
+                        onOnePlayer = { navController.navigate(Routes.setup(solo = true)) },
+                        onTwoPlayers = { navController.navigate(Routes.setup(solo = false)) },
+                    )
                 }
-                composable(Routes.SETUP) {
+                composable(Routes.SETUP) { entry ->
+                    val solo = entry.arguments?.getString(Routes.ARG_SOLO).toBoolean()
                     SetupScreen(
-                        onStart = { seed, rounds ->
-                            navController.navigate(Routes.game(seed, rounds))
+                        solo = solo,
+                        onStart = { seed, rounds, level ->
+                            navController.navigate(Routes.game(seed, rounds, level))
                         },
                     )
                 }
                 composable(Routes.GAME) { entry ->
                     val seed = entry.arguments?.getString(Routes.ARG_SEED)?.toLongOrNull() ?: 0L
                     val rounds = entry.arguments?.getString(Routes.ARG_ROUNDS)?.toIntOrNull() ?: 3
+                    val level =
+                        entry.arguments
+                            ?.getString(Routes.ARG_LEVEL)
+                            ?.takeIf { it != NO_LEVEL }
+                            ?.let { runCatching { AiLevel.valueOf(it) }.getOrNull() }
                     GameScreen(
                         seed = seed,
                         roundsToWin = rounds,
+                        aiLevel = level,
                         onFinished = { winner ->
                             navController.navigate(Routes.result(winner)) {
                                 popUpTo(Routes.MENU)
@@ -89,7 +107,10 @@ object Routes {
 }
 
 @Composable
-private fun MenuScreen(onTwoPlayers: () -> Unit) {
+private fun MenuScreen(
+    onOnePlayer: () -> Unit,
+    onTwoPlayers: () -> Unit,
+) {
     Column(
         modifier =
             Modifier
@@ -110,14 +131,19 @@ private fun MenuScreen(onTwoPlayers: () -> Unit) {
             contentScale = ContentScale.FillWidth,
             modifier = Modifier.fillMaxWidth(0.8f),
         )
-        Button(onClick = {}, enabled = false) { Text("One player (M3)") }
+        Button(onClick = onOnePlayer) { Text("One player") }
         Button(onClick = onTwoPlayers) { Text("Two players, same device") }
         Button(onClick = {}, enabled = false) { Text("Bluetooth (M6)") }
     }
 }
 
 @Composable
-private fun SetupScreen(onStart: (Long, Int) -> Unit) {
+private fun SetupScreen(
+    solo: Boolean,
+    onStart: (Long, Int, AiLevel?) -> Unit,
+) {
+    var level by remember { mutableStateOf(AiLevel.MEDIUM) }
+
     Column(
         modifier =
             Modifier
@@ -128,8 +154,23 @@ private fun SetupScreen(onStart: (Long, Int) -> Unit) {
     ) {
         Text("Match setup", style = MaterialTheme.typography.headlineSmall)
         Text("Best of 5 — first to 3 rounds")
-        Button(onClick = { onStart(System.currentTimeMillis(), 3) }) { Text("Start") }
-        Button(onClick = { onStart(FIXED_SEED, 3) }) { Text("Start with a fixed seed") }
+
+        if (solo) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (option in AiLevel.entries) {
+                    FilterChip(
+                        selected = option == level,
+                        onClick = { level = option },
+                        label = { Text(option.name) },
+                    )
+                }
+            }
+        }
+
+        val chosen = if (solo) level else null
+        Button(onClick = { onStart(System.currentTimeMillis(), 3, chosen) }) { Text("Start") }
+        // A known seed makes a bug reproducible: the same match, shot for shot.
+        Button(onClick = { onStart(FIXED_SEED, 3, chosen) }) { Text("Start with a fixed seed") }
     }
 }
 
@@ -153,5 +194,4 @@ private fun ResultScreen(
     }
 }
 
-/** A known seed makes a bug reproducible: the same match, shot for shot. */
 private const val FIXED_SEED = 20260913L

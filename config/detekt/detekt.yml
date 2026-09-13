@@ -33,5 +33,8 @@ style:
     # `**/ui/**` and `**/render/**`: dp sizes, alpha values and grid offsets read better
     # as literals at the point of use than behind a name.
     excludes: ['**/test/**', '**/render/**', '**/ui/**', '**/Rng.kt', '**/Trig.kt']
+    # An enum like AiLevel(sigmaAngle, sigmaPower, refine) is a table of tuned values.
+    # Naming each one would only repeat the enum constant's own name.
+    ignoreEnums: true
   MaxLineLength:
     maxLineLength: 120
