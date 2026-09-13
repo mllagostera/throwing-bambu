@@ -414,11 +414,14 @@ Reglas:
 <uses-permission android:name="android.permission.BLUETOOTH_SCAN"     android:minSdkVersion="31"/>
 <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:minSdkVersion="33"/>
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30"/>
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" android:maxSdkVersion="30"/>
 <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
 <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
 ```
 
 Solicitar en runtime **solo al entrar en el modo Bluetooth**, nunca al arrancar. Pantalla explicativa previa al diálogo del sistema.
+
+`ACCESS_COARSE_LOCATION` no es opcional: declarar FINE sin COARSE es un error de lint (`CoarseFineLocation`) y rompe el build. Desde Android 12 el usuario puede conceder solo COARSE, así que el flujo de permisos del §M6 debe tratar «solo COARSE» como un estado válido y no como denegación.
 
 ---
 

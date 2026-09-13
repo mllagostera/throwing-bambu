@@ -26,7 +26,7 @@ Regla operativa: **ninguna tarea se cierra sin su test o su verificación manual
 
 La especificación es sólida, pero contenía **once puntos que no se podían implementar tal cual**. Cada uno lleva propuesta concreta.
 
-**Estado:** ✅ **D-01 a D-06 ya están aplicadas** a `ESPEC_DESARROLLO.md`; el texto se conserva aquí como registro de la decisión y su motivo. 🟡 D-07 a D-11 siguen pendientes y se consumen en M1 (D-07, D-08, D-09) y M5 (D-10, D-11).
+**Estado:** ✅ **D-01 a D-06 y D-12 ya están aplicadas** a `ESPEC_DESARROLLO.md`; el texto se conserva aquí como registro de la decisión y su motivo. 🟡 D-07 a D-11 siguen pendientes y se consumen en M1 (D-07, D-08, D-09) y M5 (D-10, D-11).
 
 ### ✅ D-01 — El pool de `path` es incompatible con `MatchEvent` — *aplicada en la especificación (§6, §8, §9, §11)*
 
@@ -124,6 +124,12 @@ Box-Muller con `ln(u1)` revienta si `nextFloat()` devuelve exactamente 0,0 — y
 
 **Propuesta:** lo envía **siempre el tirador**, inmediatamente después de su `SHOT`. El receptor adopta `outcome`, `impactX` e `impactY` **antes** de aplicar el cráter — el `outcome` decide la puntuación, así que adoptar solo las coordenadas deja marcadores divergentes. Contador `divergences` expuesto en la pantalla de depuración; >1 por partida es un bug de determinismo abierto, no un aviso.
 
+### ✅ D-12 — La lista de permisos del §12 está incompleta — *aplicada (§12)*
+
+Declarar `ACCESS_FINE_LOCATION` sin `ACCESS_COARSE_LOCATION` es un **error** de lint (`CoarseFineLocation`) y aborta el build de la app. Lo detectó el primer CI de M0.
+
+No es solo un formalismo: desde Android 12 el usuario puede conceder únicamente COARSE, así que el flujo de permisos de M6 (T-42) debe tratar «solo COARSE» como estado válido y comprobar si Nearby funciona con esa concesión, en lugar de darlo por denegado.
+
 ### Otros puntos menores asumidos sin decisión
 
 - §3 afirma que caben «6–9» edificios. Con `BUILD_W` ∈ [24, 40] y `width` ∈ [320, 460], el rango real es **8–19** (mínimo `320/40`, máximo `460/24`). No afecta al código, pero el número aparece en el documento de contrato y conviene corregirlo.
@@ -205,10 +211,10 @@ throwing-bambu/
 | Tests de `:core` | ✅ Ejecutados (build equivalente Kotlin JVM + JUnit): 2/2 en verde |
 | ktlint sobre `.kt` y `.kts` | ✅ Limpio (ktlint-cli 1.5.0 sobre todo el repositorio) |
 | detekt | ✅ Limpio, con la configuración de `config/detekt/detekt.yml` |
-| Build de `:transport` y `:app` | ⏳ **Pendiente del primer CI**: requiere SDK de Android y acceso a Google Maven |
+| Build de `:transport` y `:app` | ✅ Verificado en CI, tras corregir el error de lint que destapó (D-12) |
 | `app` arranca en pantalla vacía | ⏳ Pendiente de dispositivo o emulador |
 
-**Decisiones consumidas:** D-04 (orientación landscape fijada en el manifiesto).
+**Decisiones consumidas:** D-04 (orientación landscape en el manifiesto) y D-12 (permiso COARSE), esta última descubierta por el propio CI.
 
 ---
 
