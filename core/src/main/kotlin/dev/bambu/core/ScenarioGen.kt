@@ -143,7 +143,11 @@ private fun paint(
     return Terrain(width, mask, color, buildings)
 }
 
-private fun paintWindows(b: Building, width: Int, color: ByteArray) {
+private fun paintWindows(
+    b: Building,
+    width: Int,
+    color: ByteArray,
+) {
     if (b.windowCols == 0) return
     val rows = b.windows.size / b.windowCols
     for (r in 0 until rows) {
@@ -156,7 +160,13 @@ private fun paintWindows(b: Building, width: Int, color: ByteArray) {
     }
 }
 
-private fun fillWindow(color: ByteArray, width: Int, left: Int, top: Int, idx: Byte) {
+private fun fillWindow(
+    color: ByteArray,
+    width: Int,
+    left: Int,
+    top: Int,
+    idx: Byte,
+) {
     for (y in top until top + WIN_H) {
         if (y < 0 || y >= G.H) continue
         val row = y * width

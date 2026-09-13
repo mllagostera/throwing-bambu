@@ -10,6 +10,9 @@ indent_size = 4
 
 [*.{kt,kts}]
 max_line_length = 120
+# Fijado explícitamente: el plugin de Gradle usa ktlint_official y el CLI, intellij_idea.
+# Sin esto, verificar en local y en CI da resultados distintos.
+ktlint_code_style = ktlint_official
 # Los @Composable van en PascalCase por convención de Compose.
 ktlint_function_naming_ignore_when_annotated_with = Composable
 # Los nombres de fichero los fija la especificación (GameConstants.kt, Physics.kt…),

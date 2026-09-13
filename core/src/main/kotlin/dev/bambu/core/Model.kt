@@ -89,7 +89,13 @@ class Terrain(
      * terreno, tras varios cráteres, deja istmos de 1–2 px que el plátano atravesaría.
      * Devuelve `true` y escribe el píxel en [out]; `false` si el segmento está despejado.
      */
-    fun firstSolidOnSegment(x0: Float, y0: Float, x1: Float, y1: Float, out: IntArray): Boolean {
+    fun firstSolidOnSegment(
+        x0: Float,
+        y0: Float,
+        x1: Float,
+        y1: Float,
+        out: IntArray,
+    ): Boolean {
         var cx = x0.toInt()
         var cy = y0.toInt()
         val ex = x1.toInt()
