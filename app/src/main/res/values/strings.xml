@@ -40,4 +40,16 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_system">System language</string>
     <string name="settings_back">Back</string>
+
+    <!-- Bluetooth permission gate (M6) -->
+    <string name="bt_title">Play over Bluetooth</string>
+    <string name="bt_explain_body">To find the other device, this game needs permission to use Bluetooth. It is used only to look for a nearby player and to send your throws. Nothing leaves the two devices.</string>
+    <string name="bt_denied_body">Without that permission the game cannot see the other device. You can grant it in the app\'s settings, under Permissions.</string>
+    <string name="bt_off_body">Bluetooth is switched off. Turn it on and come back.</string>
+    <string name="bt_location_off_body">On this version of Android, Bluetooth search also needs location services switched on. Your location is never read or sent.</string>
+    <string name="bt_ready_body">Ready. Looking for the other device\u2026</string>
+    <string name="bt_action_continue">Continue</string>
+    <string name="bt_action_bluetooth_settings">Bluetooth settings</string>
+    <string name="bt_action_location_settings">Location settings</string>
+    <string name="bt_action_back">Back</string>
 </resources>

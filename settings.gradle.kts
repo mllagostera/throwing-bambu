@@ -30,14 +30,14 @@ rootProject.name = "throwing-bambu"
 
 include(":core")
 
-// `:core` es Kotlin JVM puro (regla de oro §0.1) y no necesita el SDK de Android para
-// compilarse ni testearse. `-PcoreOnly` deja fuera los módulos Android para poder
-// trabajar el núcleo —física, RNG, escenario, IA— en un entorno sin SDK ni acceso a
-// Google Maven:
+// `:core` is plain Kotlin JVM (golden rule §0.1) and needs no Android SDK to compile or
+// to test. `-PcoreOnly` leaves the Android modules out, so the engine — physics, RNG,
+// scenario, AI, protocol — can be worked on in an environment with no SDK and no access
+// to Google Maven:
 //
 //     ./gradlew -PcoreOnly :core:test
 //
-// El build completo (el que ejecuta CI) no pasa esa propiedad e incluye los tres módulos.
+// The full build, the one CI runs, does not pass that property and includes all three.
 if (!providers.gradleProperty("coreOnly").isPresent) {
     include(":transport")
     include(":app")

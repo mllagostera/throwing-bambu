@@ -402,7 +402,7 @@ private fun MenuButton(
  * would lay itself out as if it were in portrait.
  */
 @Composable
-private fun ScreenScaffold(content: @Composable (wide: Boolean) -> Unit) {
+internal fun ScreenScaffold(content: @Composable (wide: Boolean) -> Unit) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val wide = maxWidth > maxHeight
         Box(
