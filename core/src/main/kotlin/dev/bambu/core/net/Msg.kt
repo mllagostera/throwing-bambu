@@ -3,6 +3,9 @@ package dev.bambu.core.net
 import dev.bambu.core.Outcome
 import dev.bambu.core.Shot
 
+/** Best of five, the default the host proposes unless told otherwise (§12). */
+const val DEFAULT_ROUNDS_TO_WIN: Int = 3
+
 /**
  * What the host decides and the guest accepts: exactly the body of `MATCH_START`.
  *
@@ -12,7 +15,7 @@ import dev.bambu.core.Shot
 data class MatchConfig(
     val seed: Long,
     val width: Int,
-    val roundsToWin: Int = 3,
+    val roundsToWin: Int = DEFAULT_ROUNDS_TO_WIN,
     val startingPlayer: Int = 0,
 )
 

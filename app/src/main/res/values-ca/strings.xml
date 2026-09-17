@@ -3,7 +3,6 @@
     <string name="menu_one_player">Un jugador</string>
     <string name="menu_two_players">Dos jugadors, mateix dispositiu</string>
     <string name="menu_bluetooth">Jugar per Bluetooth</string>
-    <string name="menu_bluetooth_note">L\'aparellament per Bluetooth arriba a la propera fita.</string>
     <string name="menu_settings">Configuració</string>
 
     <string name="setup_title">Configuració de la partida</string>
@@ -44,4 +43,22 @@
     <string name="bt_action_bluetooth_settings">Ajustos de Bluetooth</string>
     <string name="bt_action_location_settings">Ajustos d\'ubicació</string>
     <string name="bt_action_back">Tornar</string>
+
+    <!-- Pairing and link state (M6) -->
+    <string name="pair_title">Buscar jugador</string>
+    <string name="pair_choose_body">Un dispositiu fa d\'amfitrió i l\'altre s\'hi uneix. Tant és quin \u2014 l\'amfitrió només tria la partida.</string>
+    <string name="pair_host">Crear partida</string>
+    <string name="pair_join">Unir-se a una partida</string>
+    <string name="pair_hosting">Esperant que algú s\'hi uneixi\u2026</string>
+    <string name="pair_searching">Buscant un amfitrió a prop\u2026</string>
+    <string name="pair_unnamed">Dispositiu sense nom</string>
+    <string name="pair_cancel">Cancel\u00b7lar</string>
+    <string name="pair_error_link">La connexió ha fallat. Torna-ho a provar.</string>
+    <string name="pair_error_handshake">Els dos dispositius no s\'han pogut posar d\'acord sobre la partida. Torna-ho a provar.</string>
+    <string name="link_idle">Sense connexió</string>
+    <string name="link_advertising">Visible per a altres dispositius</string>
+    <string name="link_discovering">Buscant</string>
+    <string name="link_connecting">Connectant</string>
+    <string name="link_connected">Connectat</string>
+    <string name="link_lost">Connexió perduda</string>
 </resources>

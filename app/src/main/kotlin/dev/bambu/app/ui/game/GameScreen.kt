@@ -38,6 +38,7 @@ import dev.bambu.app.R
 import dev.bambu.app.render.GameCanvas
 import dev.bambu.app.render.GameFrame
 import dev.bambu.app.render.rememberGameSprites
+import dev.bambu.app.ui.bluetooth.BluetoothSession
 import dev.bambu.core.AiLevel
 import dev.bambu.core.G
 import dev.bambu.core.logicalWidth
@@ -54,6 +55,7 @@ fun GameScreen(
     roundsToWin: Int,
     aiLevel: AiLevel?,
     onFinished: (winner: Int) -> Unit,
+    remote: Boolean = false,
     viewModel: GameViewModel = viewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -64,8 +66,16 @@ fun GameScreen(
         val screenW = with(density) { maxWidth.roundToPx() }
         val screenH = with(density) { maxHeight.roundToPx() }
 
-        LaunchedEffect(seed, screenW, screenH) {
-            if (screenW > 0 && screenH > 0) {
+        LaunchedEffect(seed, screenW, screenH, remote) {
+            if (screenW <= 0 || screenH <= 0) return@LaunchedEffect
+            val link = BluetoothSession.link
+            val agreed = BluetoothSession.config
+            if (remote && link != null && agreed != null) {
+                // The width comes from the handshake, never from this screen: the host
+                // decided it, and a device that recomputed its own would be playing a
+                // differently shaped match from the one on the other side of the room.
+                viewModel.startRemote(link, agreed, BluetoothSession.localPlayer)
+            } else {
                 viewModel.start(seed, logicalWidth(screenW, screenH), roundsToWin, aiLevel)
             }
         }
