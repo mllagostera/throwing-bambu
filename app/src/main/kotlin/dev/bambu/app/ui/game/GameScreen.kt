@@ -1,6 +1,7 @@
 package dev.bambu.app.ui.game
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,10 +26,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,7 @@ import dev.bambu.app.R
 import dev.bambu.app.render.GameCanvas
 import dev.bambu.app.render.GameFrame
 import dev.bambu.app.render.rememberGameSprites
+import dev.bambu.app.ui.theme.playfieldScrim
 import dev.bambu.core.AiLevel
 import dev.bambu.core.G
 import dev.bambu.core.logicalWidth
@@ -110,11 +112,12 @@ private fun Hud(
     state: GameUiState,
     modifier: Modifier = Modifier,
 ) {
+    val colors = MaterialTheme.colorScheme
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.45f))
+                .background(colors.playfieldScrim)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -126,7 +129,7 @@ private fun Hud(
                     state.scores.getOrElse(0) { 0 },
                     state.scores.getOrElse(1) { 0 },
                 ),
-            color = Color.White,
+            color = colors.onSurface,
             style = MaterialTheme.typography.titleMedium,
         )
         Text(
@@ -136,31 +139,24 @@ private fun Hud(
                     state.humanPlayers.size == 1 -> stringResource(R.string.game_your_turn)
                     else -> stringResource(R.string.game_player, state.currentPlayer + 1)
                 },
-            color = Color.White,
+            color = colors.onSurface,
             style = MaterialTheme.typography.titleMedium,
         )
-        WindIndicator(state.wind)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            WindArrow(wind = state.wind, color = colors.onSurface)
+            Text(
+                // The arrow already announces the value; repeating it would read it twice.
+                text = state.wind.toString(),
+                color = colors.onSurface,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.clearAndSetSemantics { },
+            )
+        }
     }
 }
-
-/** An arrow whose length is proportional to |wind|, with the value beside it (§14). */
-@Composable
-private fun WindIndicator(wind: Int) {
-    val arrow =
-        when {
-            wind > 0 -> "→".repeat(windBars(wind))
-            wind < 0 -> "←".repeat(windBars(wind))
-            else -> "·"
-        }
-    Text(
-        // Arrows and a number: nothing to translate, and the sign reads the same everywhere.
-        text = "$arrow $wind",
-        color = Color.White,
-        style = MaterialTheme.typography.titleMedium,
-    )
-}
-
-private fun windBars(wind: Int): Int = (kotlin.math.abs(wind) + 2) / 3
 
 @Composable
 private fun Controls(
@@ -179,7 +175,7 @@ private fun Controls(
         modifier =
             modifier
                 .fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.45f))
+                .background(MaterialTheme.colorScheme.playfieldScrim)
                 .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -249,6 +245,8 @@ private fun CompactSlider(
     onTextChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(4.dp)
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -256,7 +254,7 @@ private fun CompactSlider(
     ) {
         Text(
             text = label,
-            color = Color.White.copy(alpha = 0.7f),
+            color = colors.onSurfaceVariant,
             style = MaterialTheme.typography.labelMedium,
         )
         BasicTextField(
@@ -270,15 +268,20 @@ private fun CompactSlider(
             singleLine = true,
             textStyle =
                 MaterialTheme.typography.titleMedium.copy(
-                    color = if (value == null) Color(0xFFFF8A80) else Color.White,
+                    color = if (value == null) colors.error else colors.onSurface,
                     textAlign = TextAlign.Center,
                 ),
-            cursorBrush = SolidColor(Color.White),
+            cursorBrush = SolidColor(colors.onSurface),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier =
                 Modifier
                     .width(44.dp)
-                    .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                    // Opaque, not a tint of the scrim. The field used to be white at 12 %,
+                    // which left its real colour to whatever the playfield happened to be
+                    // showing underneath: an invalid value came out at 1.2:1 over a white
+                    // panda. A surface of its own is also what an input should look like.
+                    .background(colors.surfaceContainerHigh, shape)
+                    .border(1.dp, colors.outline, shape)
                     .padding(vertical = 4.dp),
         )
         Slider(

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      The same value as `surface` in BambuTheme.kt, and the only place it is duplicated.
+      It exists so the window is already the game's blue before Compose draws its first
+      frame; without it the platform theme's grey shows through for a frame on cold start.
+      If the scheme's surface changes, change it here too.
+    -->
+    <color name="bambu_surface">#FF131326</color>
+</resources>

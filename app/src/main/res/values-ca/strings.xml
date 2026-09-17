@@ -23,6 +23,7 @@
     <string name="game_your_turn">El teu torn</string>
     <string name="game_player">Jugador %1$d</string>
     <string name="game_score">J1 %1$d — %2$d J2</string>
+    <string name="game_wind">Vent %1$d</string>
 
     <string name="result_winner">Guanya el jugador %1$d</string>
     <string name="result_play_again">Una altra partida</string>

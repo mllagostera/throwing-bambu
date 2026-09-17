@@ -23,6 +23,7 @@
     <string name="game_your_turn">Du bist dran</string>
     <string name="game_player">Spieler %1$d</string>
     <string name="game_score">S1 %1$d — %2$d S2</string>
+    <string name="game_wind">Wind %1$d</string>
 
     <string name="result_winner">Spieler %1$d gewinnt</string>
     <string name="result_play_again">Nochmal spielen</string>

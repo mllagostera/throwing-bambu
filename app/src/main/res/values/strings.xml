@@ -29,6 +29,8 @@
     <string name="game_your_turn">Your turn</string>
     <string name="game_player">Player %1$d</string>
     <string name="game_score">P1 %1$d — %2$d P2</string>
+    <!-- Read out for the wind arrow, which is a drawing and has no text of its own. -->
+    <string name="game_wind">Wind %1$d</string>
 
     <string name="result_winner">Player %1$d wins</string>
     <string name="result_play_again">Play again</string>
