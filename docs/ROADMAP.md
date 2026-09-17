@@ -51,7 +51,9 @@ The one thing the game cannot do yet. The hard part is already built and tested:
 protocol, the loopback, the networked match and reconnection all run on a plain JVM.
 What M6 adds is the radio underneath them and the screens around them.
 
-- `NearbyTransport` over Nearby Connections.
+- ~~`NearbyTransport` over Nearby Connections.~~ Written. The lifecycle it runs on is
+  tested on a plain JVM (`LinkLifecycle`); the Nearby calls themselves are the part
+  only a device can prove.
 - Permission flow: an explanatory screen before the system dialog, requested only when
   entering Bluetooth mode, with a specific message per denial. "COARSE location only" has
   to be treated as a valid grant, not a refusal (D-12).

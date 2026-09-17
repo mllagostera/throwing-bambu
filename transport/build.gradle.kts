@@ -29,6 +29,7 @@ kotlin {
 dependencies {
     api(project(":core"))
     implementation(libs.coroutines.android)
+    implementation(libs.coroutines.play.services)
     implementation(libs.play.services.nearby)
 
     testImplementation(libs.kotlin.test)
