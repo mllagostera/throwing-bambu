@@ -510,7 +510,7 @@ Trail: the last 12 points with decreasing opacity.
 
 ### Explosion
 
-`boom.png`, 8 frames at 60 ms = 480 ms. The crater is applied to the terrain on **frame 3**, not at the start and not at the end.
+`boom.png`, 8 frames at 40 ms = 320 ms. The crater is applied to the terrain on **frame 3**, not at the start and not at the end.
 
 ---
 
