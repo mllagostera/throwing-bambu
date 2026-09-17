@@ -2,27 +2,23 @@ package dev.bambu.app.ui.game
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.bambu.app.render.PandaFrame
-import dev.bambu.app.render.TerrainBitmap
+import dev.bambu.app.ui.bluetooth.BluetoothSession
 import dev.bambu.core.AiLevel
 import dev.bambu.core.AiOpponent
 import dev.bambu.core.AiShotSource
 import dev.bambu.core.HumanShotSource
 import dev.bambu.core.MatchEngine
-import dev.bambu.core.MatchEvent
-import dev.bambu.core.Outcome
 import dev.bambu.core.Rng
 import dev.bambu.core.Shot
+import dev.bambu.core.net.MatchConfig
+import dev.bambu.core.net.RemoteMatch
+import dev.bambu.core.net.Transport
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-/** The crater opens on frame 3 of the explosion (§13). */
-private const val BOOM_CRATER_FRAME = 3
-private const val BOOM_LAST_FRAME = 7
 
 /**
  * Drives one match and turns its events into something the UI can draw.
@@ -37,7 +33,9 @@ class GameViewModel : ViewModel() {
 
     private val human = HumanShotSource()
     private val animator = MatchAnimator(_uiState, viewModelScope)
+    private val events = MatchEvents(_uiState, animator)
     private var engine: MatchEngine? = null
+    private var remote: RemoteMatch? = null
     private var job: Job? = null
 
     var speedMultiplier: Int
@@ -71,8 +69,44 @@ class GameViewModel : ViewModel() {
 
         val created = MatchEngine(seed, width, sources, roundsToWin)
         engine = created
-        job = viewModelScope.launch { created.events.collect { handle(it) } }
+        job = viewModelScope.launch { created.events.collect { events.handle(it) } }
         viewModelScope.launch { created.run() }
+    }
+
+    /**
+     * Starts a match across a link (§12).
+     *
+     * The shape is the same as [start] and that is the point: the engine does not know
+     * a radio exists, only that one of its two sources happens to be slow. What changes
+     * is who owns the engine — [RemoteMatch] does, because it also has to route results
+     * and byes — and that only one seat is ours, so only one panda answers the Throw
+     * button.
+     */
+    fun startRemote(
+        transport: Transport,
+        config: MatchConfig,
+        localPlayer: Int,
+    ) {
+        if (engine != null) return
+
+        val session = RemoteMatch(transport, localPlayer, human, config)
+        remote = session
+        engine = session.engine
+        _uiState.update { it.copy(humanPlayers = setOf(localPlayer)) }
+        job = viewModelScope.launch { session.engine.events.collect { events.handle(it) } }
+        viewModelScope.launch { session.run() }
+    }
+
+    /**
+     * Hangs up when the screen goes for good.
+     *
+     * A networked match owns a radio, and a radio nobody is listening to still costs
+     * battery and still advertises this device to the room. Leaving the game screen has
+     * to end the link, not just stop drawing it.
+     */
+    override fun onCleared() {
+        remote?.let { BluetoothSession.end() }
+        remote = null
     }
 
     /** The UI's Throw button. Ignored unless the player is actually aiming. */
@@ -86,105 +120,4 @@ class GameViewModel : ViewModel() {
             human.submit(Shot(state.turn, angle, power))
         }
     }
-
-    private suspend fun handle(event: MatchEvent) {
-        when (event) {
-            is MatchEvent.RoundStart -> onRoundStart(event)
-            is MatchEvent.TurnStart -> onTurnStart(event)
-            is MatchEvent.ShotFired -> onShotFired(event)
-            is MatchEvent.TerrainChanged -> onTerrainChanged(event)
-            is MatchEvent.RoundEnd -> onRoundEnd(event)
-            is MatchEvent.MatchEnd -> onMatchEnd(event)
-        }
-    }
-
-    private fun onRoundStart(event: MatchEvent.RoundStart) =
-        _uiState.update {
-            it.copy(
-                phase = GamePhase.AIMING,
-                round = event.round,
-                scenario = event.scenario,
-                terrain = TerrainBitmap(event.scenario.terrain),
-                terrainVersion = 0,
-                wind = event.wind,
-                canePoint = null,
-                trail = emptyList(),
-                boom = null,
-                sunOuch = false,
-                pandaPoses = emptyMap(),
-                roundWinner = null,
-            )
-        }
-
-    private fun onTurnStart(event: MatchEvent.TurnStart) =
-        _uiState.update {
-            it.copy(
-                phase = GamePhase.AIMING,
-                currentPlayer = event.player,
-                wind = event.wind,
-                turn = event.turn,
-                canePoint = null,
-                trail = emptyList(),
-            )
-        }
-
-    /**
-     * Animates the throw and then the first frames of the explosion.
-     *
-     * The split is not arbitrary: the crater opens on frame 3 (§13), and the engine
-     * emits `TerrainChanged` right after this event. Playing frames 0–2 here and the
-     * rest in [onTerrainChanged] is what puts the hole in the ground on the exact frame
-     * the art was drawn for.
-     */
-    private suspend fun onShotFired(event: MatchEvent.ShotFired) {
-        _uiState.update {
-            it.copy(
-                phase = GamePhase.THROWING,
-                lastShots = it.lastShots + (event.player to event.shot),
-                pandaPoses = it.pandaPoses + (event.player to PandaFrame.throwing(event.player)),
-            )
-        }
-        animator.flight(event)
-        _uiState.update {
-            it.copy(
-                canePoint = null,
-                trail = emptyList(),
-                pandaPoses = it.pandaPoses + (event.player to PandaFrame.IDLE),
-            )
-        }
-        if (leavesACrater(event)) {
-            animator.boom(event.result.impactX, event.result.impactY, 0, BOOM_CRATER_FRAME - 1)
-        }
-    }
-
-    private suspend fun onTerrainChanged(event: MatchEvent.TerrainChanged) {
-        _uiState.update { state ->
-            state.terrain?.patch(event.cx, event.cy, event.r)
-            state.copy(terrainVersion = state.terrain?.version ?: state.terrainVersion)
-        }
-        animator.boom(event.cx, event.cy, BOOM_CRATER_FRAME, BOOM_LAST_FRAME)
-        _uiState.update { it.copy(boom = null) }
-    }
-
-    private fun onRoundEnd(event: MatchEvent.RoundEnd) =
-        _uiState.update {
-            it.copy(
-                phase = GamePhase.ROUND_OVER,
-                roundWinner = event.winner,
-                scores = event.scores.toList(),
-                canePoint = null,
-            )
-        }
-
-    private fun onMatchEnd(event: MatchEvent.MatchEnd) =
-        _uiState.update {
-            it.copy(
-                phase = GamePhase.MATCH_OVER,
-                matchWinner = event.winner,
-                scores = event.scores.toList(),
-            )
-        }
-
-    private fun leavesACrater(event: MatchEvent.ShotFired): Boolean =
-        event.result.outcome is Outcome.HitTerrain || event.result.outcome is Outcome.HitPanda
 }

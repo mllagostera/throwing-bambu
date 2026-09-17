@@ -18,7 +18,7 @@ Download the `apk-debug` artifact from the latest green CI run and install it.
 |---|---|
 | **One player** | Three difficulties. On Hard the AI hits within three turns in 87 % of generated scenarios. |
 | **Two players, same device** | Hot-seat, best of five. |
-| **Play over Bluetooth** | Visible but disabled — this is M6. |
+| **Play over Bluetooth** | Built end to end, but unproven: no two devices have run it. |
 | **Settings** | Language: English, Español, Català, Français, Deutsch, or the system's. |
 
 A match is a destructible skyline, wind that changes every turn, and a bamboo cane with
@@ -54,10 +54,9 @@ What M6 adds is the radio underneath them and the screens around them.
 - ~~`NearbyTransport` over Nearby Connections.~~ Written. The lifecycle it runs on is
   tested on a plain JVM (`LinkLifecycle`); the Nearby calls themselves are the part
   only a device can prove.
-- Permission flow: an explanatory screen before the system dialog, requested only when
-  entering Bluetooth mode, with a specific message per denial. "COARSE location only" has
-  to be treated as a valid grant, not a refusal (D-12).
-- Pairing UI: host or guest, peer list, link state.
+- ~~Permission flow, with "COARSE only" treated as a valid grant (D-12).~~ Done.
+- ~~Pairing UI: host or guest, peer list, link state.~~ Done, along with the `HELLO` /
+  `MATCH_START` handshake that settles the seed, the width and who throws first.
 - ~~Reconnection after a drop, by replaying the shot history (D-10).~~ Done: `RESUME`
   asks, `HISTORY` answers, and the engine replays. What is left is only the part that
   needs a radio — noticing the drop and dialling back.

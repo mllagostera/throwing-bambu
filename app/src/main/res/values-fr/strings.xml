@@ -3,7 +3,6 @@
     <string name="menu_one_player">Un joueur</string>
     <string name="menu_two_players">Deux joueurs, même appareil</string>
     <string name="menu_bluetooth">Jouer en Bluetooth</string>
-    <string name="menu_bluetooth_note">L\'appairage Bluetooth arrive au prochain jalon.</string>
     <string name="menu_settings">Paramètres</string>
 
     <string name="setup_title">Réglages de la partie</string>
@@ -45,4 +44,22 @@
     <string name="bt_action_bluetooth_settings">Paramètres Bluetooth</string>
     <string name="bt_action_location_settings">Paramètres de localisation</string>
     <string name="bt_action_back">Retour</string>
+
+    <!-- Pairing and link state (M6) -->
+    <string name="pair_title">Trouver un joueur</string>
+    <string name="pair_choose_body">Un appareil héberge, l\'autre rejoint. Peu importe lequel \u2014 l\'hôte choisit simplement la partie.</string>
+    <string name="pair_host">Héberger une partie</string>
+    <string name="pair_join">Rejoindre une partie</string>
+    <string name="pair_hosting">En attente d\'un autre joueur\u2026</string>
+    <string name="pair_searching">Recherche d\'un hôte à proximité\u2026</string>
+    <string name="pair_unnamed">Appareil sans nom</string>
+    <string name="pair_cancel">Annuler</string>
+    <string name="pair_error_link">La connexion a échoué. Réessaie.</string>
+    <string name="pair_error_handshake">Les deux appareils n\'ont pas pu se mettre d\'accord sur la partie. Réessaie.</string>
+    <string name="link_idle">Non connecté</string>
+    <string name="link_advertising">Visible par les autres appareils</string>
+    <string name="link_discovering">Recherche</string>
+    <string name="link_connecting">Connexion</string>
+    <string name="link_connected">Connecté</string>
+    <string name="link_lost">Connexion perdue</string>
 </resources>
