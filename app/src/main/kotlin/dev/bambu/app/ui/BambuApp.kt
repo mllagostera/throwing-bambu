@@ -31,7 +31,6 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -43,14 +42,15 @@ import dev.bambu.app.render.rememberGameSprites
 import dev.bambu.app.settings.AppLocale
 import dev.bambu.app.settings.LocaleStore
 import dev.bambu.app.settings.WithAppLocale
+import dev.bambu.app.ui.bluetooth.bluetoothDestinations
 import dev.bambu.app.ui.game.GameScreen
 import dev.bambu.core.AiLevel
 
 /** The level slot carries this when there is no AI: two people at the same device. */
 const val NO_LEVEL = "NONE"
 
-private const val FIXED_SEED = 20260913L
-private const val ROUNDS_TO_WIN = 3
+internal const val FIXED_SEED = 20260913L
+internal const val ROUNDS_TO_WIN = 3
 
 /**
  * Navigation (§14): `Menu → [mode] → Setup → Game → Result`, plus settings.
@@ -91,6 +91,7 @@ private fun BambuNavHost(
             MenuScreen(
                 onOnePlayer = { navController.navigate(Routes.setup(solo = true)) },
                 onTwoPlayers = { navController.navigate(Routes.setup(solo = false)) },
+                onBluetooth = { navController.navigate(Routes.BLUETOOTH) },
                 onSettings = { navController.navigate(Routes.SETTINGS) },
             )
         }
@@ -125,6 +126,7 @@ private fun BambuNavHost(
                 },
             )
         }
+        bluetoothDestinations(navController)
         composable(Routes.RESULT) { entry ->
             val winner = entry.arguments?.getString(Routes.ARG_WINNER)?.toIntOrNull() ?: 0
             ResultScreen(
@@ -139,6 +141,9 @@ private fun BambuNavHost(
 object Routes {
     const val MENU = "menu"
     const val SETTINGS = "settings"
+    const val BLUETOOTH = "bluetooth"
+    const val PAIRING = "pairing"
+    const val REMOTE_GAME = "remote-game"
     const val ARG_SEED = "seed"
     const val ARG_ROUNDS = "rounds"
     const val ARG_WINNER = "winner"
@@ -163,6 +168,7 @@ object Routes {
 private fun MenuScreen(
     onOnePlayer: () -> Unit,
     onTwoPlayers: () -> Unit,
+    onBluetooth: () -> Unit,
     onSettings: () -> Unit,
 ) {
     // Landscape is the only orientation this game runs in (D-04), so the menu is laid
@@ -172,14 +178,7 @@ private fun MenuScreen(
         val buttons: @Composable ColumnScope.() -> Unit = {
             MenuButton(stringResource(R.string.menu_one_player), onClick = onOnePlayer)
             MenuButton(stringResource(R.string.menu_two_players), onClick = onTwoPlayers)
-            MenuButton(stringResource(R.string.menu_bluetooth), enabled = false, onClick = {})
-            Text(
-                text = stringResource(R.string.menu_bluetooth_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            MenuButton(stringResource(R.string.menu_bluetooth), onClick = onBluetooth)
             OutlinedButton(onClick = onSettings, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.menu_settings))
             }
