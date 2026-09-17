@@ -32,4 +32,16 @@
     <string name="settings_language">Idioma</string>
     <string name="settings_language_system">Idioma del sistema</string>
     <string name="settings_back">Tornar</string>
+
+    <!-- Bluetooth permission gate (M6) -->
+    <string name="bt_title">Jugar per Bluetooth</string>
+    <string name="bt_explain_body">Per trobar l\'altre dispositiu, el joc necessita permís per fer servir el Bluetooth. Només s\'utilitza per buscar algú a prop i enviar els teus llançaments. No surt res dels dos dispositius.</string>
+    <string name="bt_denied_body">Sense aquest permís el joc no pot veure l\'altre dispositiu. El pots concedir als ajustos de l\'aplicació, a Permisos.</string>
+    <string name="bt_off_body">El Bluetooth està apagat. Encén-lo i torna.</string>
+    <string name="bt_location_off_body">En aquesta versió d\'Android, la cerca per Bluetooth també necessita la ubicació activada. La teva ubicació mai no es llegeix ni s\'envia.</string>
+    <string name="bt_ready_body">A punt. Buscant l\'altre dispositiu\u2026</string>
+    <string name="bt_action_continue">Continuar</string>
+    <string name="bt_action_bluetooth_settings">Ajustos de Bluetooth</string>
+    <string name="bt_action_location_settings">Ajustos d\'ubicació</string>
+    <string name="bt_action_back">Tornar</string>
 </resources>

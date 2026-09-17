@@ -32,4 +32,16 @@
     <string name="settings_language">Sprache</string>
     <string name="settings_language_system">Systemsprache</string>
     <string name="settings_back">Zurück</string>
+
+    <!-- Bluetooth permission gate (M6) -->
+    <string name="bt_title">Über Bluetooth spielen</string>
+    <string name="bt_explain_body">Um das andere Gerät zu finden, braucht das Spiel die Berechtigung für Bluetooth. Sie dient nur dazu, jemanden in der Nähe zu suchen und deine Würfe zu senden. Nichts verlässt die beiden Geräte.</string>
+    <string name="bt_denied_body">Ohne diese Berechtigung sieht das Spiel das andere Gerät nicht. Du kannst sie in den App-Einstellungen unter Berechtigungen erteilen.</string>
+    <string name="bt_off_body">Bluetooth ist ausgeschaltet. Schalte es ein und komm zurück.</string>
+    <string name="bt_location_off_body">In dieser Android-Version braucht die Bluetooth-Suche zusätzlich eingeschaltete Standortdienste. Dein Standort wird nie gelesen oder gesendet.</string>
+    <string name="bt_ready_body">Bereit. Suche nach dem anderen Gerät\u2026</string>
+    <string name="bt_action_continue">Weiter</string>
+    <string name="bt_action_bluetooth_settings">Bluetooth-Einstellungen</string>
+    <string name="bt_action_location_settings">Standort-Einstellungen</string>
+    <string name="bt_action_back">Zurück</string>
 </resources>

@@ -32,4 +32,16 @@
     <string name="settings_language">Langue</string>
     <string name="settings_language_system">Langue du système</string>
     <string name="settings_back">Retour</string>
+
+    <!-- Bluetooth permission gate (M6) -->
+    <string name="bt_title">Jouer par Bluetooth</string>
+    <string name="bt_explain_body">Pour trouver l\'autre appareil, le jeu a besoin de l\'autorisation d\'utiliser le Bluetooth. Elle sert uniquement à chercher un joueur à proximité et à envoyer tes lancers. Rien ne quitte les deux appareils.</string>
+    <string name="bt_denied_body">Sans cette autorisation, le jeu ne peut pas voir l\'autre appareil. Tu peux l\'accorder dans les paramètres de l\'application, sous Autorisations.</string>
+    <string name="bt_off_body">Le Bluetooth est désactivé. Active-le et reviens.</string>
+    <string name="bt_location_off_body">Sur cette version d\'Android, la recherche Bluetooth exige aussi que la localisation soit activée. Ta position n\'est jamais lue ni envoyée.</string>
+    <string name="bt_ready_body">Prêt. Recherche de l\'autre appareil\u2026</string>
+    <string name="bt_action_continue">Continuer</string>
+    <string name="bt_action_bluetooth_settings">Paramètres Bluetooth</string>
+    <string name="bt_action_location_settings">Paramètres de localisation</string>
+    <string name="bt_action_back">Retour</string>
 </resources>

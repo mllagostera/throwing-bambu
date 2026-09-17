@@ -32,4 +32,16 @@
     <string name="settings_language">Idioma</string>
     <string name="settings_language_system">Idioma del sistema</string>
     <string name="settings_back">Volver</string>
+
+    <!-- Bluetooth permission gate (M6) -->
+    <string name="bt_title">Jugar por Bluetooth</string>
+    <string name="bt_explain_body">Para encontrar el otro dispositivo, el juego necesita permiso para usar Bluetooth. Solo se usa para buscar a alguien cerca y enviar tus lanzamientos. Nada sale de los dos dispositivos.</string>
+    <string name="bt_denied_body">Sin ese permiso el juego no puede ver el otro dispositivo. Puedes concederlo en los ajustes de la aplicaci\u00f3n, en Permisos.</string>
+    <string name="bt_off_body">El Bluetooth est\u00e1 apagado. Enci\u00e9ndelo y vuelve.</string>
+    <string name="bt_location_off_body">En esta versi\u00f3n de Android, la b\u00fasqueda por Bluetooth necesita adem\u00e1s la ubicaci\u00f3n activada. Tu ubicaci\u00f3n nunca se lee ni se env\u00eda.</string>
+    <string name="bt_ready_body">Listo. Buscando el otro dispositivo\u2026</string>
+    <string name="bt_action_continue">Continuar</string>
+    <string name="bt_action_bluetooth_settings">Ajustes de Bluetooth</string>
+    <string name="bt_action_location_settings">Ajustes de ubicaci\u00f3n</string>
+    <string name="bt_action_back">Volver</string>
 </resources>
