@@ -86,7 +86,7 @@ construction there can be no pixel with an intermediate alpha.
 |---|---|---|---|---|---|
 | `panda.png` | 144×24 | 24×24 | 6 | (12, 24) | `chest_1`/`chest_2` at 150 ms |
 | `bamboo.png` | 32×8 | 8×8 | 4 | (4, 4) | 80 ms loop |
-| `boom.png` | 256×32 | 32×32 | 8 | (16, 16) | ~40 ms; the crater is erased on frame 3 |
+| `boom.png` | 256×32 | 32×32 | 8 | (16, 16) | 40 ms; the crater is erased on frame 3 |
 | `sun.png` | 40×20 | 20×20 | 2 | (10, 10) | `ouch` for 1 s |
 | `facades.png` | 80×16 | 16×16 | 5 swatches | — | — |
 | `skyline.png` | 460×80 | — | 1 | — | — |
