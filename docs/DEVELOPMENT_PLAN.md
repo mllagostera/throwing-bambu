@@ -290,7 +290,7 @@ The art is already delivered in `art/` and passes `tools/verify_assets.py`. This
 | ✅ T-28 | Copy the sprites to `app/src/main/assets/sprites/` and load them with `inScaled = false`, painting with filtering off | 0.4 d |
 | ✅ T-29 | Panda: 6 frames (idle, arm_left, arm_right, chest_1, chest_2, defeated), 24×24 cell, pivot (12,24) | 0.5 d |
 | ✅ T-30 | Cane in flight: 4 frames at 80 ms, 8×8 cell; trail behind it | 0.4 d |
-| ✅ T-31 | Explosion `boom.png`: 8 frames × ~40 ms, crater applied on **frame 3** | 0.4 d |
+| ✅ T-31 | Explosion `boom.png`: 8 frames × 40 ms, crater applied on **frame 3** | 0.4 d |
 | ✅ T-32 | Sun with two expressions driven by `sunHit` (D-02), 1 s of `ouch` | 0.3 d |
 | ✅ T-33 | `skyline.png` as a background band, cropped from the right, and the two-colour sky gradient | 0.4 d |
 | ⏳ T-34 | Alignment pass: feet exactly on `roofY`, explosion centred on the crater, the half-pixel pivot question, no fractional scaling | 0.4 d |

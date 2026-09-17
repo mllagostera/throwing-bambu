@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -44,6 +45,9 @@ import dev.bambu.app.settings.LocaleStore
 import dev.bambu.app.settings.WithAppLocale
 import dev.bambu.app.ui.bluetooth.bluetoothDestinations
 import dev.bambu.app.ui.game.GameScreen
+import dev.bambu.app.ui.icon.BambuIcons
+import dev.bambu.app.ui.icon.ButtonIcon
+import dev.bambu.app.ui.theme.BambuTheme
 import dev.bambu.core.AiLevel
 
 /** The level slot carries this when there is no AI: two people at the same device. */
@@ -65,7 +69,7 @@ fun BambuApp(navController: NavHostController = rememberNavController()) {
     var locale by remember { mutableStateOf(store.locale) }
 
     WithAppLocale(locale) {
-        MaterialTheme {
+        BambuTheme {
             Surface(modifier = Modifier.fillMaxSize()) {
                 BambuNavHost(
                     navController = navController,
@@ -178,8 +182,13 @@ private fun MenuScreen(
         val buttons: @Composable ColumnScope.() -> Unit = {
             MenuButton(stringResource(R.string.menu_one_player), onClick = onOnePlayer)
             MenuButton(stringResource(R.string.menu_two_players), onClick = onTwoPlayers)
-            MenuButton(stringResource(R.string.menu_bluetooth), onClick = onBluetooth)
+            MenuButton(
+                label = stringResource(R.string.menu_bluetooth),
+                icon = BambuIcons.Bluetooth,
+                onClick = onBluetooth,
+            )
             OutlinedButton(onClick = onSettings, modifier = Modifier.fillMaxWidth()) {
+                ButtonIcon(BambuIcons.Settings)
                 Text(stringResource(R.string.menu_settings))
             }
         }
@@ -254,7 +263,10 @@ private fun SettingsScreen(
                 }
             }
 
-            Button(onClick = onBack) { Text(stringResource(R.string.settings_back)) }
+            Button(onClick = onBack) {
+                ButtonIcon(BambuIcons.Back)
+                Text(stringResource(R.string.settings_back))
+            }
         }
     }
 }
@@ -367,6 +379,7 @@ private fun PixelLogo(
 private fun MenuButton(
     label: String,
     enabled: Boolean = true,
+    icon: ImageVector? = null,
     onClick: () -> Unit,
 ) {
     Button(
@@ -374,6 +387,7 @@ private fun MenuButton(
         enabled = enabled,
         modifier = Modifier.fillMaxWidth(),
     ) {
+        if (icon != null) ButtonIcon(icon)
         Text(label)
     }
 }

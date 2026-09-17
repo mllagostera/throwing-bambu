@@ -510,7 +510,7 @@ Trail: the last 12 points with decreasing opacity.
 
 ### Explosion
 
-`boom.png`, 8 frames at 60 ms = 480 ms. The crater is applied to the terrain on **frame 3**, not at the start and not at the end.
+`boom.png`, 8 frames at 40 ms = 320 ms. The crater is applied to the terrain on **frame 3**, not at the start and not at the end.
 
 ---
 
@@ -525,6 +525,24 @@ The UI does **not** live in the logical canvas. It sits on top, in native dp.
 - In remote mode, lock the controls and show "Waiting for {nick}…" along with the link state.
 
 Navigation: `Menu → [One player | Two local | Bluetooth] → Match setup → Game → Result`, plus `Menu → Settings`.
+
+### Palette (`app/ui/theme/BambuTheme.kt`)
+
+The interface has its own `ColorScheme`, derived from the playfield's: **keep the EGA hue, cut the saturation to about a third, pick the lightness by role.** Surfaces take the sky's blue, `primary` the bamboo cane's green, `secondary` the lit windows' yellow, `tertiary` the first facade's cyan, `error` the light red at a little more saturation than the rule.
+
+It is dark and there is no light variant: the game is played over a deep blue sky in landscape, and a light interface would mean the menus flashing white between two dark screens. `@color/bambu_surface` mirrors `surface` so the window is already that blue before the first frame.
+
+Two numbers in it are measured, not chosen:
+
+- **`SCRIM_ALPHA` = 0.75.** The HUD and controls bars are the scheme's darkest surface at this alpha over the playfield. At the 0.45 it used to be, white text over the sun — which is yellow and sits at y=0, directly behind the HUD — came out at 3.1:1. At 0.75 the worst ground in the game leaves 7.4:1 for `onSurface` and 4.9:1 for `onSurfaceVariant`.
+- **The numeric field is opaque** (`surfaceContainerHigh`, `outline` border). It used to be white at 12 %, which left its real colour to whatever the playfield was showing underneath: an invalid value read at 1.2:1 over a white panda. Against a surface of its own, `error` reads at 5.9:1.
+
+### Icons and the wind arrow
+
+Vectors, not pixel art, and never scaled by the playfield's integer: they belong beside the text.
+
+- **Icons** (`app/ui/icon/BambuIcons.kt`): 24 dp on a 24-unit grid, 2 dp stroke, round caps and joins, no fills. `Back` is the only one that auto-mirrors. Settings is drawn as two faders rather than a gear: at this size a ring with teeth collapses into a black cog, the same failure the sun's rays hit in the pixel art. `SoundOn`/`SoundOff` exist but are not wired until the audio setting arrives in M7.
+- **Wind arrow** (`app/ui/game/WindArrow.kt`): same 2 dp weight. The shaft is 6 dp plus 2 dp per unit of wind, leaving the centre of a fixed 56 dp box towards the direction the wind pushes, with a 5 dp barb at about 37°. No wind draws a 10 dp dash instead. The box is fixed so the HUD does not reflow between rounds, and the numeric value stays beside it — the arrow is read at a glance, the number is what a player aiming into a headwind counts on.
 
 ### Languages
 

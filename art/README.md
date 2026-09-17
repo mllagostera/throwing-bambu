@@ -86,7 +86,7 @@ construction there can be no pixel with an intermediate alpha.
 |---|---|---|---|---|---|
 | `panda.png` | 144×24 | 24×24 | 6 | (12, 24) | `chest_1`/`chest_2` at 150 ms |
 | `bamboo.png` | 32×8 | 8×8 | 4 | (4, 4) | 80 ms loop |
-| `boom.png` | 256×32 | 32×32 | 8 | (16, 16) | ~40 ms; the crater is erased on frame 3 |
+| `boom.png` | 256×32 | 32×32 | 8 | (16, 16) | 40 ms; the crater is erased on frame 3 |
 | `sun.png` | 40×20 | 20×20 | 2 | (10, 10) | `ouch` for 1 s |
 | `facades.png` | 80×16 | 16×16 | 5 swatches | — | — |
 | `skyline.png` | 460×80 | — | 1 | — | — |
@@ -168,8 +168,13 @@ corresponding `art_*.py`.
 
 ## Out of scope for this delivery
 
-Section 10 (interface) is not pixel art and is not part of "the sprites":
-typeface, wind arrow in SVG, UI colour specification and 24 dp icons are all
-still pending. The typeface additionally requires verifying the accented glyphs
-and the "ñ" of *Press Start 2P* or *Silkscreen* before committing, which is a
-licensing decision rather than a drawing one.
+Section 10 (interface) is not pixel art and is not part of "the sprites". Three
+of its four items have since been built in the app rather than here: the UI
+colour specification, the 24 dp icons and the wind arrow all live under
+`app/src/main/kotlin/dev/bambu/app/ui/`, as vectors and colour tokens. See §14
+of the development specification.
+
+The **typeface** is still pending, and it is the one item that was never a
+drawing problem: it requires verifying the accented glyphs and the "ñ" of
+*Press Start 2P* or *Silkscreen* before committing, which is a licensing
+decision.
