@@ -15,6 +15,7 @@ import os
 import art_bamboo
 import art_boom
 import art_facades
+import art_icon
 import art_logo
 import art_panda
 import art_skyline
@@ -25,6 +26,7 @@ from ega import Canvas, hstrip, save_png
 ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 ART = os.path.join(ROOT, "art")
 SPRITES = os.path.join(ART, "sprites")
+ICON = os.path.join(ART, "icon")
 PALETTE = os.path.join(ART, "palette")
 
 # Sky gradient: the engine generates it in code, it is not drawn. Only the pair
@@ -42,6 +44,21 @@ def _gpl() -> str:
     for i, (r, g, b) in enumerate(ega.EGA):
         lines.append(f"{r:3d} {g:3d} {b:3d}\t{i:2d} {ega.EGA_NAMES[i]}")
     return "\n".join(lines) + "\n"
+
+
+def _circle_mask(c: Canvas) -> Canvas:
+    """What a circular launcher mask leaves of the icon.
+
+    Not a deliverable: it exists so the corners can be judged by looking rather
+    than by trusting the check in verify_assets.py.
+    """
+    m = Canvas(c.w, c.h)
+    r = c.w / 2.0
+    for y in range(c.h):
+        for x in range(c.w):
+            if ((x + 0.5) - r) ** 2 + ((y + 0.5) - r) ** 2 <= r * r:
+                m.set(x, y, c.px[y][x])
+    return m
 
 
 def _zoom(c: Canvas, factor: int, grid=None) -> Canvas:
@@ -80,6 +97,7 @@ def main():
 
     os.makedirs(SPRITES, exist_ok=True)
     os.makedirs(PALETTE, exist_ok=True)
+    os.makedirs(ICON, exist_ok=True)
 
     piece("panda", hstrip(art_panda.frames(), 24, 24, "panda"), 24)
     piece("bamboo", hstrip(art_bamboo.frames(), 8, 8, "bamboo"), 8)
@@ -93,6 +111,15 @@ def main():
         path = os.path.join(SPRITES, name + ".png")
         save_png(canvas, path)
         print(f"{path}  {canvas.w}x{canvas.h}  {len(canvas.colors())} colours")
+
+    # The launcher icon is a resource, not a sprite, so it stays out of
+    # art/sprites/: the SyncSpritesTask in app/build.gradle.kts copies that
+    # directory wholesale into the app's assets, and a launcher icon has no
+    # business being packaged there as well.
+    icon = art_icon.build()
+    save_png(icon, os.path.join(ICON, "icon.png"))
+    print(f"{os.path.join(ICON, 'icon.png')}  {icon.w}x{icon.h}  "
+          f"{len(icon.colors())} colours")
 
     # Deliverable 0: the palette.
     with open(os.path.join(PALETTE, "ega16.gpl"), "w") as f:
@@ -113,6 +140,10 @@ def main():
         for name, canvas, cell in PIECES:
             save_png(_zoom(canvas, args.zoom, cell),
                      os.path.join(prev, f"{name}_x{args.zoom}.png"))
+        save_png(_zoom(icon, args.zoom),
+                 os.path.join(prev, f"icon_x{args.zoom}.png"))
+        save_png(_zoom(_circle_mask(icon), args.zoom),
+                 os.path.join(prev, f"icon_masked_x{args.zoom}.png"))
         print(f"magnified contact sheets in {prev}")
 
 
