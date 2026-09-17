@@ -334,7 +334,7 @@ The truncation test is exhaustive rather than representative — **every prefix 
 
 | ID | Task | Est. |
 |---|---|---|
-| T-43 | `NearbyTransport` with `P2P_POINT_TO_POINT`: advertise, discover, connect, `BYTES` payloads, callbacks mapped to `Flow`/`StateFlow` | 1.2 d |
+| ✅ T-43 | `NearbyTransport` with `P2P_POINT_TO_POINT`: advertise, discover, connect, `BYTES` payloads, callbacks mapped to `Flow`/`StateFlow` | 1.2 d |
 | T-44 | Permission flow: explanatory screen **before** the system dialog, requested only when entering Bluetooth mode, readable error states for denied permission / Bluetooth off / location disabled on ≤ API 30, and "COARSE only" treated as valid (D-12) | 0.8 d |
 | T-45 | Pairing UI: host/guest, peer list with nicknames, link state, cancellation | 0.7 d |
 | ✅ T-46 | Reconnection: `RESUME` + `HISTORY` (D-10), deterministic state rebuild, resume on the right turn | 0.8 d |
