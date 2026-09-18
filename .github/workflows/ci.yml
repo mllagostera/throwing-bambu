@@ -58,8 +58,8 @@ jobs:
 
       # The APK is built in this same job, after the tests: if anything is red there is
       # no APK to download. It is the debug one, signed with the debug key and therefore
-      # installable as is (`adb install`, or by opening it on the phone). The release APK
-      # needs its own keystore and arrives in M7 (T-52).
+      # installable as is (`adb install`, or by opening it on the phone). The signed
+      # release bundle is not built here — only a tag produces one, in release.yml.
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug
 
