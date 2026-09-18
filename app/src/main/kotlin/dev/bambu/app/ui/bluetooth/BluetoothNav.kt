@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import dev.bambu.app.ui.MatchMode
 import dev.bambu.app.ui.ROUNDS_TO_WIN
 import dev.bambu.app.ui.Routes
 import dev.bambu.app.ui.game.GameScreen
@@ -44,7 +45,9 @@ internal fun NavGraphBuilder.bluetoothDestinations(navController: NavHostControl
             aiLevel = null,
             remote = true,
             onFinished = { winner ->
-                navController.navigate(Routes.result(winner)) { popUpTo(Routes.MENU) }
+                navController.navigate(Routes.result(winner, MatchMode.BLUETOOTH)) {
+                    popUpTo(Routes.MENU)
+                }
             },
         )
     }

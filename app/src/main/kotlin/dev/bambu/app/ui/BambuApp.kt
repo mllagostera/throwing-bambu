@@ -54,6 +54,19 @@ import kotlin.random.Random
 /** The level slot carries this when there is no AI: two people at the same device. */
 const val NO_LEVEL = "NONE"
 
+/**
+ * How the finished match was played, carried into the result screen.
+ *
+ * "Play again" has to lead somewhere, and where that is depends on the mode: the setup
+ * screen for the two local ones, and the Bluetooth gate for a remote match, whose link
+ * the game screen hung up when the last round ended.
+ */
+enum class MatchMode {
+    SOLO,
+    LOCAL,
+    BLUETOOTH,
+}
+
 internal const val ROUNDS_TO_WIN = 3
 
 /**
@@ -121,21 +134,32 @@ private fun BambuNavHost(
                     ?.getString(Routes.ARG_LEVEL)
                     ?.takeIf { it != NO_LEVEL }
                     ?.let { runCatching { AiLevel.valueOf(it) }.getOrNull() }
+            val mode = if (level != null) MatchMode.SOLO else MatchMode.LOCAL
             GameScreen(
                 seed = seed,
                 roundsToWin = rounds,
                 aiLevel = level,
                 onFinished = { winner ->
-                    navController.navigate(Routes.result(winner)) { popUpTo(Routes.MENU) }
+                    navController.navigate(Routes.result(winner, mode)) { popUpTo(Routes.MENU) }
                 },
             )
         }
         bluetoothDestinations(navController)
         composable(Routes.RESULT) { entry ->
             val winner = entry.arguments?.getString(Routes.ARG_WINNER)?.toIntOrNull() ?: 0
+            val mode =
+                entry.arguments
+                    ?.getString(Routes.ARG_MODE)
+                    ?.let { runCatching { MatchMode.valueOf(it) }.getOrNull() }
+                    ?: MatchMode.LOCAL
             ResultScreen(
                 winner = winner,
-                onPlayAgain = { navController.navigate(Routes.SETUP) { popUpTo(Routes.MENU) } },
+                // `Routes.SETUP` is the pattern, `{solo}` and all: navigating to it landed
+                // on a route no destination answers to. Another match starts where this
+                // one was set up, which is a different place per mode.
+                onPlayAgain = {
+                    navController.navigate(Routes.playAgain(mode)) { popUpTo(Routes.MENU) }
+                },
                 onMenu = { navController.popBackStack(Routes.MENU, inclusive = false) },
             )
         }
@@ -153,9 +177,10 @@ object Routes {
     const val ARG_WINNER = "winner"
     const val ARG_LEVEL = "level"
     const val ARG_SOLO = "solo"
+    const val ARG_MODE = "mode"
     const val SETUP = "setup/{$ARG_SOLO}"
     const val GAME = "game/{$ARG_SEED}/{$ARG_ROUNDS}/{$ARG_LEVEL}"
-    const val RESULT = "result/{$ARG_WINNER}"
+    const val RESULT = "result/{$ARG_WINNER}/{$ARG_MODE}"
 
     fun setup(solo: Boolean) = "setup/$solo"
 
@@ -165,7 +190,18 @@ object Routes {
         level: AiLevel?,
     ) = "game/$seed/$rounds/${level?.name ?: NO_LEVEL}"
 
-    fun result(winner: Int) = "result/$winner"
+    fun result(
+        winner: Int,
+        mode: MatchMode,
+    ) = "result/$winner/${mode.name}"
+
+    /** Where a match of this kind is started, for the result screen to return to. */
+    fun playAgain(mode: MatchMode) =
+        when (mode) {
+            MatchMode.SOLO -> setup(solo = true)
+            MatchMode.LOCAL -> setup(solo = false)
+            MatchMode.BLUETOOTH -> BLUETOOTH
+        }
 }
 
 @Composable
