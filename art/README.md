@@ -203,7 +203,7 @@ corresponding `art_*.py`.
 Section 10 (interface) is not pixel art and is not part of "the sprites". Three
 of its four items have since been built in the app rather than here: the UI
 colour specification, the 24 dp icons and the wind arrow all live under
-`app/src/main/kotlin/dev/bambu/app/ui/`, as vectors and colour tokens. See §14
+`app/src/main/kotlin/com/vansid/panda/app/ui/`, as vectors and colour tokens. See §14
 of the development specification.
 
 The **typeface** is still pending, and it is the one item that was never a

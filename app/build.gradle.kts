@@ -38,11 +38,11 @@ val syncSprites =
     }
 
 android {
-    namespace = "dev.bambu.app"
+    namespace = "com.vansid.panda.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "dev.bambu.app"
+        applicationId = "com.vansid.panda"
         minSdk = 24
         targetSdk = 35
         versionCode = 1

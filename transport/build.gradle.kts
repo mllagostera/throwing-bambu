@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "dev.bambu.transport"
+    namespace = "com.vansid.panda.transport"
     compileSdk = 35
 
     defaultConfig {
