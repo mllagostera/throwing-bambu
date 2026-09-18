@@ -12,6 +12,7 @@ A turn-based artillery game for Android: two pandas, a destructible skyline and 
 | [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) | The **execution plan**: prior decisions, task breakdown, milestones M0–M7, test traceability, risks. |
 | [`docs/CI.md`](docs/CI.md) | The **pipeline**: what runs on a pull request, on `main` and on a tag; where the version comes from; the upload key; how to cut a release. |
 | [`docs/SPRITE_SPEC.md`](docs/SPRITE_SPEC.md) | The original art brief. Not edited — see AGENTS.md. |
+| [`docs/PRIVACY.md`](docs/PRIVACY.md) | The **privacy policy**, as published on the Play listing. |
 | [`art/README.md`](art/README.md) | Art delivery notes: inventory, format and every divergence from the brief. |
 
 ## Status
