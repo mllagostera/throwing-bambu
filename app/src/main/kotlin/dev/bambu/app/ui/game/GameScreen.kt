@@ -6,10 +6,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -64,6 +69,13 @@ fun GameScreen(
     val density = LocalDensity.current
     val sprites = rememberGameSprites()
 
+    // The system bars are hidden (see MainActivity), so what is normally left here is a
+    // display cutout, plus whatever a swipe brings back transiently. Belt and braces: on
+    // a device that refuses to hide them, the clock lands on the wind indicator.
+    val horizontal = WindowInsetsSides.Horizontal
+    val topInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + horizontal)
+    val bottomInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + horizontal)
+
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenW = with(density) { maxWidth.roundToPx() }
         val screenH = with(density) { maxHeight.roundToPx() }
@@ -107,12 +119,18 @@ fun GameScreen(
             )
         }
 
-        Hud(state = state, modifier = Modifier.align(Alignment.TopCenter))
+        // The insets go on the overlays and never on the canvas above. Padding the canvas
+        // would change the logical width it derives from its own size (D-04) — and for a
+        // networked match that width is negotiated, not measured locally.
+        Hud(
+            state = state,
+            modifier = Modifier.align(Alignment.TopCenter).windowInsetsPadding(topInsets),
+        )
 
         Controls(
             state = state,
             onThrow = viewModel::submit,
-            modifier = Modifier.align(Alignment.BottomCenter),
+            modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(bottomInsets),
         )
     }
 }
