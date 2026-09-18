@@ -167,55 +167,15 @@ throwing-bambu/
 - **Language:** everything in English, per `AGENTS.md` — identifiers, comments, documents and commit messages.
 - **No attribution** in commits or pull requests, per `AGENTS.md`.
 - **CI:** `./gradlew build test` on every push, plus `:core:test` on macOS and a debug APK as an artifact. A branch with red CI takes no new tasks.
-- **Versioning:** the git tag is the only source. A tag `vX.Y.Z` gives `versionName` `X.Y.Z`
-  and `versionCode` `X * 10000 + Y * 100 + Z`; anything else builds as `0.0.0-dev` and a tag
-  that looks like a release but cannot be parsed fails the build. Play accepts a
-  `versionCode` once and never again, so it is derived rather than written down.
-- **Releases:** pushing `vX.Y.Z` runs `.github/workflows/release.yml`, which re-runs style
-  and tests, refuses to continue if the tag and the built version disagree, builds and signs
-  the bundle, checks it really is signed, and publishes a GitHub Release with it and a debug
-  APK. See "The upload key" below.
+- **Versioning and releases:** the git tag is the only source. A tag `vX.Y.Z` gives
+  `versionName` `X.Y.Z` and `versionCode` `X * 10000 + Y * 100 + Z`, and pushing one builds,
+  signs and publishes a GitHub Release. Play accepts a `versionCode` once and never again,
+  which is why it is derived rather than written down. **`docs/CI.md` is the whole of it** —
+  both workflows step by step, how the upload key is made, how to cut a release, and what
+  each failure means.
 - **Quality:** `ktlint` + `detekt` in the pipeline since M0. Adding them in M7 would mean 400 warnings at once.
 - **Coverage:** no percentage target. The contract is the list of 12 mandatory tests in §15 plus the ones this plan adds.
 - **Any change to a constant in `G`** requires updating `DEVELOPMENT_SPEC.md` in the **same commit**. That is the rule in §0 and it is reviewed.
-
-### The upload key
-
-Play App Signing holds the key that signs what people install, and every app created since
-2021 must use it. What this repository handles is the **upload key**: it only proves to Play
-that an upload is ours, and Google can reset it if it is lost. That asymmetry is the whole
-point — losing an upload key is a support ticket, losing an app signing key would be the end
-of the app.
-
-It is generated once, on a machine that is not CI, and never enters the repository:
-
-```bash
-keytool -genkeypair -v -storetype PKCS12 -keystore upload.jks -alias upload \
-  -keyalg RSA -keysize 4096 -validity 10000
-```
-
-`-validity 10000` puts the expiry around 2053. Play refuses a key that expires before 22
-October 2033, so a default validity would be rejected. **Back the file and its passwords up
-somewhere that is not that machine** before going any further.
-
-CI reads the key from four repository secrets (Settings → Secrets and variables → Actions).
-`release.yml` checks all four are present before it builds anything, decodes the keystore
-outside the checkout — inside it, the untracked file would make the tree dirty and the
-version would become `X.Y.Z-dirty` — and deletes it whatever happens afterwards:
-
-| Secret | Value |
-|---|---|
-| `UPLOAD_KEYSTORE_BASE64` | output of `base64 -w0 upload.jks` |
-| `UPLOAD_KEYSTORE_PASSWORD` | the store password |
-| `UPLOAD_KEY_ALIAS` | `upload` |
-| `UPLOAD_KEY_PASSWORD` | the key password |
-
-To build a signed release on a developer machine, the same four values go in
-`keystore.properties` at the repository root — `storeFile`, `storePassword`, `keyAlias`,
-`keyPassword` — which `.gitignore` keeps out. Environment variables win over the file, which
-is how CI passes them. With neither, a release build still runs and comes out unsigned: that
-is what keeps R8 and resource shrinking testable by anyone, and why `release.yml` verifies
-the signature with `jarsigner` instead of assuming it.
 
 ---
 
@@ -237,7 +197,7 @@ the signature with `jarsigner` instead of assuming it.
 
 **Unplanned additions:**
 
-- Every run publishes the **debug APK** as an artifact (`apk-debug`, 14 days), built after the tests: red build, no APK. A tag `vX.Y.Z` additionally publishes a GitHub Release with the signed release bundle — see "The upload key" in §4.
+- Every run publishes the **debug APK** as an artifact (`apk-debug`, 14 days), built after the tests: red build, no APK. A tag `vX.Y.Z` additionally publishes a GitHub Release with the signed release bundle — see `docs/CI.md`.
 - A second CI job runs `:core:test` on **macOS**. §17.1 warns about floating-point divergence between JVM implementations; from M1 on this catches it in the commit that introduces it, not in M6 as a networking bug.
 
 **DoD:** ✅ CI green on both jobs. ⏳ `app` starting on a device is the one item still unverified: it needs a phone or an emulator, which this environment does not have.

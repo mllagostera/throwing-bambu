@@ -10,6 +10,7 @@ A turn-based artillery game for Android: two pandas, a destructible skyline and 
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Where the project stands, what is left, and what still needs a device. Start here. |
 | [`docs/DEVELOPMENT_SPEC.md`](docs/DEVELOPMENT_SPEC.md) | The technical **contract**: constants, signatures, protocol, mandatory tests. Changed here before it is changed in code. |
 | [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) | The **execution plan**: prior decisions, task breakdown, milestones M0–M7, test traceability, risks. |
+| [`docs/CI.md`](docs/CI.md) | The **pipeline**: what runs on a pull request, on `main` and on a tag; where the version comes from; the upload key; how to cut a release. |
 | [`docs/SPRITE_SPEC.md`](docs/SPRITE_SPEC.md) | The original art brief. Not edited — see AGENTS.md. |
 | [`art/README.md`](art/README.md) | Art delivery notes: inventory, format and every divergence from the brief. |
 

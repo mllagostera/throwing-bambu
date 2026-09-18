@@ -38,6 +38,8 @@ transport/             Android library: connectivity behind one interface. Skele
 app/                   Android app: Compose, rendering, navigation. Skeleton.
 docs/DEVELOPMENT_SPEC.md  Engineering contract: constants, signatures, protocol, tests.
 docs/DEVELOPMENT_PLAN.md  Execution plan: decisions, tasks, milestones, risks.
+docs/CI.md             The pipeline: both workflows step by step, how the version is
+                       derived, the upload key, and how a release is cut.
 docs/SPRITE_SPEC.md    The original art brief. See "Do not edit" below.
 art/README.md          Delivery notes: inventory, format, and every divergence
                        from the brief with its reason.
