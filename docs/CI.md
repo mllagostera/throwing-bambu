@@ -1,8 +1,9 @@
 # Continuous integration and releases
 
-Two workflows, and they do not overlap. `ci.yml` answers "is this change sound?" and runs
-on pull requests and on `main`. `release.yml` answers "is this artefact publishable?" and
-runs on a release tag and nothing else.
+Two workflows that trigger, and they do not overlap. `ci.yml` answers "is this change
+sound?" and runs on pull requests and on `main`. `release.yml` answers "is this artefact
+publishable?" and runs on a release tag and nothing else. A third, `determinism.yml`, never
+triggers on its own: both call it, so the check exists once rather than twice.
 
 Both take the app's version from the same place: the git tag. Nothing in the repository
 names a release, so this document and `app/build.gradle.kts` are the whole story.
@@ -19,17 +20,16 @@ names a release, so this document and `app/build.gradle.kts` are the whole story
 | Tag `v0.1.0` | **no** | yes |
 | Tag `v2.0.0-rc1`, `v1.2`, `release-1` | no | **no** |
 
-Two consequences worth stating outright, because neither is visible from the file:
+Two things worth stating outright, because neither is visible from the file:
 
 - **A tag does not run `ci.yml`.** Its trigger is `push: branches: [main]`, and naming
-  `branches` excludes tags. So the macOS determinism job does not run for a release.
+  `branches` excludes tags. `release.yml` therefore calls the determinism check itself
+  rather than relying on CI having run it.
 - **A tag that does not match the filter starts nothing, and says nothing.** The filter
   `v[0-9]+.[0-9]+.[0-9]+` looks like a regular expression but is a GitHub filter pattern,
   where `+` means "one or more of the preceding character". `v2.0.0-rc1` does not match, no
   workflow starts, and no run appears to fail. The build-side guard in §2 only fires once
-  something builds, which in that case never happens.
-
-Both are listed again in §8, where the rest of the known gaps are.
+  something builds, which in that case never happens. This one is still open — see §8.
 
 ---
 
@@ -105,12 +105,18 @@ The APK is built after the tests on purpose — if anything is red there is no A
 download. It is the debug one, signed with the debug key, so it installs as it is
 (`adb install`, or by opening it on the phone).
 
-### Job `determinism` (macos-latest)
+### Job `determinism`
 
-Checkout (shallow — see §2), JDK 17, `./gradlew :core:test`. §17.1 of the specification
-warns about floating-point divergence between JVM implementations: the same fingerprint
-tests, run on a second operating system, catch it in the commit that introduces it rather
-than as a networking bug in M6.
+One line: `uses: ./.github/workflows/determinism.yml`. That file is a `workflow_call`
+workflow — checkout (shallow — see §2), JDK 17, `./gradlew :core:test` on **macos-latest** —
+and `release.yml` calls the same one. §17.1 of the specification warns about floating-point
+divergence between JVM implementations: the same fingerprint tests, run on a second
+operating system, catch it in the commit that introduces it rather than as a networking bug
+in M6.
+
+It lives in its own file rather than in both workflows because a check copied twice is a
+check that will differ twice. It appears in the Actions tab with no runs of its own, which
+is what `workflow_call` means.
 
 `concurrency` with `cancel-in-progress: true` cancels superseded runs of the same ref.
 
@@ -118,45 +124,60 @@ than as a networking bug in M6.
 
 ## 4. `release.yml` — a release tag
 
+Three jobs in a chain. Each stage only starts if the one before it was green.
+
 ```
-checkout (fetch-depth: 0)
+┌─ preflight ─────────────────────────────── ubuntu, seconds ─┐
+│  are the four secrets set?  ── no ──→ ✗ naming which        │
+│  is the tag on main?        ── no ──→ ✗                     │
+└─────────────────────────────────────────────────────────────┘
     ↓
-are the four secrets set?  ──── no ──→ ✗ fails in seconds, naming the missing ones
-    ↓ yes
-JDK 17 + Gradle
+┌─ determinism ──────────────────────── macos, calls the file ┐
+│  :core:test on a second JVM  ── red ──→ ✗                   │
+└─────────────────────────────────────────────────────────────┘
     ↓
-ktlint + detekt + build (tests included)
-    ↓
-read the version  →  versionName / versionCode
-    ↓
-does the tag match the built version?  ── no ──→ ✗ fails
-    ↓ yes
-decode the keystore  →  $RUNNER_TEMP/upload.jks      (outside the checkout)
-    ↓
-:app:bundleRelease (signed) + :app:assembleDebug
-    ↓
-jarsigner -verify  ── "jar is unsigned" ──→ ✗ fails
-    ↓
-delete the keystore     (if: always)
-    ↓
-collect  →  throwing-bambu-<version>.aab + -debug.apk
-    ↓
-gh release create --generate-notes --verify-tag
+┌─ release ───────────────────────────────── ubuntu, minutes ─┐
+│  checkout (fetch-depth: 0)                                  │
+│  ktlint + detekt + build (tests included)                   │
+│  read the version  →  versionName / versionCode             │
+│  tag == built version?  ── no ──→ ✗                         │
+│  decode the keystore → $RUNNER_TEMP  (outside the checkout)  │
+│  :app:bundleRelease (signed) + :app:assembleDebug           │
+│  jarsigner -verify  ── "jar is unsigned" ──→ ✗              │
+│  delete the keystore   (if: always)                         │
+│  collect → throwing-bambu-<version>.aab + -debug.apk        │
+│  gh release create --generate-notes --verify-tag            │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+`preflight` exists so that everything able to say no in seconds does so before a runner
+spends ten minutes on a build that was never going to be published.
+
+`determinism` gates the release instead of running beside it. Running them in parallel would
+save a few minutes and would allow publishing while the check is still red, which is the
+outcome those minutes are worth avoiding. A tag does not run `ci.yml`, so this is the only
+place the second JVM sees a release.
 
 The tag usually lands on a commit CI has already seen green. "Usually" is not a guarantee,
-and a release is the wrong place to find out, so style and tests run again.
+and a release is the wrong place to find out, so style and tests run again in `release`.
 
-### The three gates, and what each is for
+### The gates, and what each is for
 
 | Gate | What it catches |
 |---|---|
-| The four secrets, before anything else | spending the whole build to discover there is no key — and, worse, publishing an unsigned bundle without noticing |
+| The four secrets, first of all | spending the whole build to discover there is no key — and, worse, publishing an unsigned bundle without noticing |
+| The tag is on `main` | a tag pushed to a branch that never went through a pull request, publishing code nobody reviewed |
+| `:core:test` on macOS | a floating-point divergence between JVMs, in the engine whose whole contract is reproducibility |
 | Tag equals built version | a tree that was not clean, a checkout that lost its tags, a `describe` that landed on a different tag |
 | `jarsigner -verify` | publishing an unsigned bundle, which Play rejects hours later and by hand |
 
 An unsigned release build is legitimate — it is what lets anyone exercise R8 without holding
 the key — so the workflow cannot assume it got a signed one. It checks.
+
+"On `main`" means reachable from `main`, which `git merge-base --is-ancestor` decides: the
+tip of `main`, any commit in its history, and any branch commit already merged into it all
+pass. An unmerged branch does not. **A tag on a branch is rejected until that branch is
+merged**, which is the point, and is worth knowing before tagging.
 
 ### Why the keystore lives outside the checkout
 
@@ -210,9 +231,9 @@ missing.
 ## 6. Cutting a release
 
 ```bash
-git switch main && git pull
-git tag v0.2.0            # annotated is fine too; the workflow does not care
-git push origin v0.2.0    # tags are not pushed by `git push` alone
+git switch main && git pull   # the tag has to be on main; preflight checks it
+git tag v0.2.0                # annotated is fine too; the workflow does not care
+git push origin v0.2.0        # tags are not pushed by `git push` alone
 ```
 
 That is the whole procedure. Everything else is derived. When the run goes green, the
@@ -237,6 +258,7 @@ tag. During internal testing that means `v0.2.1`, `v0.2.2`, and so on.
 | No run appears at all | the tag does not match `v[0-9]+.[0-9]+.[0-9]+` — see §1 |
 | `Cannot version 'v…': a release tag reads vMAJOR.MINOR.PATCH` | the tag has a suffix or a missing component. Delete it, tag again |
 | `Repository secrets not set: …` | the named secrets are missing — see §5 |
+| `Tag vX.Y.Z points at …, which is not on main` | the tagged commit is not reachable from `main`. Merge the work first, then tag the merged commit |
 | `Tag vX.Y.Z, but the build derived …` | the built version is not the tag. Usually `-dirty` (something wrote into the checkout) or a checkout without tags |
 | `Upload keystore configured but missing: no file at …` | `storeFile` points nowhere. In CI that means the decode step did not produce the file |
 | `Upload keystore configured but UPLOAD_… is not set` | three of the four values are present |
@@ -251,18 +273,12 @@ commit, and tagging again — the version is the tag, so there is nothing else t
 
 Listed rather than hidden. None of them blocks a release today.
 
-1. **A release does not run the determinism job.** A tag runs `release.yml` only, and the
-   macOS half of the determinism check lives in `ci.yml`. That check exists precisely
-   because the engine depends on reproducibility across JVMs, and a release is the one
-   moment it is skipped.
-2. **A malformed tag starts nothing, silently.** §1. The build-side guard cannot help,
+1. **A malformed tag starts nothing, silently.** §1. The build-side guard cannot help,
    because no build starts.
-3. **Nothing checks the tag is on `main`.** A tag pushed on any branch publishes a release
-   built from that branch.
-4. **The release job builds the release variant twice** — unsigned inside `build`, then
+2. **The release job builds the release variant twice** — unsigned inside `build`, then
    signed in `bundleRelease`. Correct, but R8 runs twice.
-5. **`versionCode` is read and discarded.** It reaches `$GITHUB_OUTPUT` and nothing consumes
+3. **`versionCode` is read and discarded.** It reaches `$GITHUB_OUTPUT` and nothing consumes
    it, though it is the number needed to reconcile a build with Play Console.
-6. **R8 has never been verified on a device.** The release build is produced and shrunk, but
+4. **R8 has never been verified on a device.** The release build is produced and shrunk, but
    nobody has installed one and confirmed the engine still behaves. That is the remaining
    half of T-52 in the development plan, and it needs a phone.
