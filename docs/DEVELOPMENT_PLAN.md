@@ -167,6 +167,14 @@ throwing-bambu/
 - **Language:** everything in English, per `AGENTS.md` — identifiers, comments, documents and commit messages.
 - **No attribution** in commits or pull requests, per `AGENTS.md`.
 - **CI:** `./gradlew build test` on every push, plus `:core:test` on macOS and a debug APK as an artifact. A branch with red CI takes no new tasks.
+- **Versioning:** the git tag is the only source. A tag `vX.Y.Z` gives `versionName` `X.Y.Z`
+  and `versionCode` `X * 10000 + Y * 100 + Z`; anything else builds as `0.0.0-dev` and a tag
+  that looks like a release but cannot be parsed fails the build. Play accepts a
+  `versionCode` once and never again, so it is derived rather than written down.
+- **Releases:** pushing `vX.Y.Z` runs `.github/workflows/release.yml`, which re-runs style
+  and tests, refuses to continue if the tag and the built version disagree, and publishes a
+  GitHub Release with the release bundle and a debug APK. The bundle is **unsigned** until
+  T-52 gives it a keystore.
 - **Quality:** `ktlint` + `detekt` in the pipeline since M0. Adding them in M7 would mean 400 warnings at once.
 - **Coverage:** no percentage target. The contract is the list of 12 mandatory tests in §15 plus the ones this plan adds.
 - **Any change to a constant in `G`** requires updating `DEVELOPMENT_SPEC.md` in the **same commit**. That is the rule in §0 and it is reviewed.
@@ -191,7 +199,7 @@ throwing-bambu/
 
 **Unplanned additions:**
 
-- Every run publishes the **debug APK** as an artifact (`apk-debug`, 14 days), built after the tests: red build, no APK. The release APK waits for M7, where keystore and R8 arrive (T-52).
+- Every run publishes the **debug APK** as an artifact (`apk-debug`, 14 days), built after the tests: red build, no APK. A tag `vX.Y.Z` additionally publishes a GitHub Release with an **unsigned** release bundle — enough to prove R8 and resource shrinking survive the release build; the keystore that would make it uploadable arrives in M7 (T-52).
 - A second CI job runs `:core:test` on **macOS**. §17.1 warns about floating-point divergence between JVM implementations; from M1 on this catches it in the commit that introduces it, not in M6 as a networking bug.
 
 **DoD:** ✅ CI green on both jobs. ⏳ `app` starting on a device is the one item still unverified: it needs a phone or an emulator, which this environment does not have.
@@ -352,7 +360,7 @@ The truncation test is exhaustive rather than representative — **every prefix 
 | T-49 | Transport selection: Nearby when GMS is present, RFCOMM otherwise; manual override in settings (§17.2 — not a secondary mode) | 0.4 d |
 | T-50 | Audio: throw, explosion, victory, defeat; `SoundPool`, respects silent mode | 0.6 d |
 | T-51 | Persistent settings (DataStore): `speedMultiplier`, sound, default AI level, rounds to win | 0.4 d |
-| T-52 | Release build: R8, `proguard-rules`, signing keystore, signed release APK in CI; verify that obfuscation does not break the determinism tests | 0.5 d |
+| T-52 | Release build: signing keystore and secrets, so `release.yml` publishes a **signed** bundle instead of an unsigned one; verify that R8 does not break the determinism tests | 0.5 d |
 | ✅ T-53a | **Localisation, brought forward from M7**: every string in resources, five languages (en/es/ca/fr/de), in-game language picker | 0.4 d |
 | T-53b | Polish: transitions, empty states, accessibility of the numeric controls | 0.4 d |
 

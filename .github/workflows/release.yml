@@ -1,0 +1,84 @@
+name: Release
+
+# The tag *is* the version. `app/build.gradle.kts` derives both the name and the code from
+# `git describe`, and no literal anywhere in the repository names a release, so a release
+# is made by pushing `vX.Y.Z` and by nothing else. The pattern below is the same shape the
+# build insists on: a tag it cannot parse fails the build rather than quietly shipping
+# version 0.0.0, and Play remembers a bad versionCode for the life of the app.
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+# Only to create the release and hang the artefacts off it. Nothing else here writes.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `git describe` needs the tags and the history behind them. The default shallow
+          # clone has neither, and every build would call itself 0.0.0-dev.
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # The tag usually lands on a commit CI has already seen green. "Usually" is not a
+      # guarantee, and a release is the wrong place to find out.
+      - name: Style and tests
+        run: ./gradlew ktlintCheck detekt build
+
+      - name: Read the version the build derived
+        id: version
+        run: |
+          set -euo pipefail
+          ./gradlew -q :app:printVersion | grep -E '^version(Name|Code)=' >> "$GITHUB_OUTPUT"
+
+      # Catches the whole family of "the artefact is not what the tag says": a tree that
+      # was not clean, a checkout that lost its tags, a describe that landed on a different
+      # one. Cheap here, unfixable once the bundle is on Play.
+      - name: The tag and the built version must agree
+        env:
+          BUILT: ${{ steps.version.outputs.versionName }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF_NAME#v}" != "$BUILT" ]; then
+            echo "Tag ${GITHUB_REF_NAME}, but the build derived ${BUILT}." >&2
+            exit 1
+          fi
+
+      - name: Build the release bundle and a debug APK
+        run: ./gradlew :app:bundleRelease :app:assembleDebug
+
+      - name: Collect the artefacts
+        env:
+          VERSION: ${{ steps.version.outputs.versionName }}
+        run: |
+          set -euo pipefail
+          mkdir -p artefactos
+          # There is no keystore yet (M7, T-52), so the bundle Play wants is built — which
+          # is what proves R8 and resource shrinking survive a release build — but comes
+          # out unsigned, and the name says so: Play rejects it as it stands. The APK is
+          # signed with the debug key and installs on a phone unchanged.
+          cp app/build/outputs/bundle/release/*.aab "artefactos/throwing-bambu-${VERSION}-unsigned.aab"
+          cp app/build/outputs/apk/debug/*.apk "artefactos/throwing-bambu-${VERSION}-debug.apk"
+
+      - name: Publish the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --verify-tag \
+            artefactos/*
