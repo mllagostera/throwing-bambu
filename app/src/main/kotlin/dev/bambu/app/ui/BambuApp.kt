@@ -49,11 +49,11 @@ import dev.bambu.app.ui.icon.BambuIcons
 import dev.bambu.app.ui.icon.ButtonIcon
 import dev.bambu.app.ui.theme.BambuTheme
 import dev.bambu.core.AiLevel
+import kotlin.random.Random
 
 /** The level slot carries this when there is no AI: two people at the same device. */
 const val NO_LEVEL = "NONE"
 
-internal const val FIXED_SEED = 20260913L
 internal const val ROUNDS_TO_WIN = 3
 
 /**
@@ -300,12 +300,9 @@ private fun SetupScreen(
             }
 
             val chosen = if (solo) level else null
-            Button(onClick = { onStart(System.currentTimeMillis(), ROUNDS_TO_WIN, chosen) }) {
+            // The seed is drawn afresh on every press: each match is a new one.
+            Button(onClick = { onStart(Random.nextLong(), ROUNDS_TO_WIN, chosen) }) {
                 Text(stringResource(R.string.setup_start))
-            }
-            // A known seed makes a bug reproducible: the same match, shot for shot.
-            Button(onClick = { onStart(FIXED_SEED, ROUNDS_TO_WIN, chosen) }) {
-                Text(stringResource(R.string.setup_start_fixed))
             }
         }
     }

@@ -12,7 +12,6 @@
     <string name="setup_title">Match setup</string>
     <string name="setup_rounds">Best of 5 — first to 3 rounds</string>
     <string name="setup_start">Start</string>
-    <string name="setup_start_fixed">Start with a fixed seed</string>
 
     <string name="level_easy">Easy</string>
     <string name="level_medium">Medium</string>
