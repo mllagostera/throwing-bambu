@@ -27,6 +27,9 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 ART = os.path.join(ROOT, "art")
 SPRITES = os.path.join(ART, "sprites")
 ICON = os.path.join(ART, "icon")
+# Launcher icons are the one piece Android resolves by density itself, so
+# they go to res/mipmap-* rather than to art/ and the assets copy.
+RES = os.path.join(ROOT, "app", "src", "main", "res")
 PALETTE = os.path.join(ART, "palette")
 
 # Sky gradient: the engine generates it in code, it is not drawn. Only the pair
@@ -89,6 +92,56 @@ def piece(name, canvas, cell=None):
     return canvas
 
 
+# Whole scale factors only, which is what dictates these buckets.
+#
+# The legacy icon is 48 dp, so 24 px of art scales by 2, 3, 4, 6 and 8 with no
+# fractional step. The adaptive foreground is 108 dp of a 36 px canvas, so it
+# scales by 3, 6, 9 and 12 -- and hdpi, which would want 4.5, is deliberately
+# absent. Android downscales xhdpi for those devices, and one filtered
+# downscale by the system beats shipping a half-pixel grid of our own.
+LEGACY_SCALES = {"mdpi": 2, "hdpi": 3, "xhdpi": 4, "xxhdpi": 6, "xxxhdpi": 8}
+ADAPTIVE_SCALES = {"mdpi": 3, "xhdpi": 6, "xxhdpi": 9, "xxxhdpi": 12}
+
+# The 24 px art centred in 36 px: exactly the central 72 dp of 108 that a
+# launcher mask is guaranteed to leave alone.
+ADAPTIVE_CANVAS = 36
+
+
+def _mipmaps(icon: Canvas) -> None:
+    """Writes the launcher icon into res/mipmap-* at every density.
+
+    The adaptive foreground carries the art's own ground rather than being cut
+    out of it: the background layer is the same blue, so the two meet
+    invisibly, and there is no risk of punching a hole through the middle of
+    the head by making one palette index transparent.
+
+    No round variant is written, and the manifest declares no `roundIcon`.
+    A circle inscribed in the 24 px square clips the outer edge of both ears:
+    art_icon keeps the four *corners* as bare ground, but a circle cuts
+    everything between them too, and the ears sit near the top edge rather
+    than in a corner. From API 26 the adaptive icon above handles a round mask
+    correctly by construction, and on the API 24-25 devices that would use a
+    round PNG the square one is used instead -- which is better than shipping
+    an asset we know to be trimmed.
+    """
+    padded = Canvas(ADAPTIVE_CANVAS, ADAPTIVE_CANVAS)
+    offset = (ADAPTIVE_CANVAS - icon.w) // 2
+    padded.blit(icon, offset, offset)
+
+    for bucket, factor in LEGACY_SCALES.items():
+        folder = os.path.join(RES, f"mipmap-{bucket}")
+        os.makedirs(folder, exist_ok=True)
+        save_png(_zoom(icon, factor), os.path.join(folder, "ic_launcher.png"))
+
+    for bucket, factor in ADAPTIVE_SCALES.items():
+        folder = os.path.join(RES, f"mipmap-{bucket}")
+        os.makedirs(folder, exist_ok=True)
+        save_png(_zoom(padded, factor), os.path.join(folder, "ic_launcher_foreground.png"))
+
+    print(f"launcher icons in {RES}/mipmap-*  "
+          f"(legacy up to {icon.w * 8}px, adaptive up to {ADAPTIVE_CANVAS * 12}px)")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--zoom", type=int, default=0,
@@ -120,6 +173,7 @@ def main():
     save_png(icon, os.path.join(ICON, "icon.png"))
     print(f"{os.path.join(ICON, 'icon.png')}  {icon.w}x{icon.h}  "
           f"{len(icon.colors())} colours")
+    _mipmaps(icon)
 
     # Deliverable 0: the palette.
     with open(os.path.join(PALETTE, "ega16.gpl"), "w") as f:

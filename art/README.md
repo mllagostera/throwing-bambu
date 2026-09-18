@@ -106,6 +106,21 @@ destroy the nearest-neighbour look. Load them with `BitmapFactory.Options` with
 `inScaled = false` and paint them with a `Paint` with filtering off
 (`isFilterBitmap = false`, `isAntiAlias = false`).
 
+The launcher icon is the exception, because Android resolves it by density
+itself. `gen_sprites.py` writes it into `app/src/main/res/mipmap-*` as well as
+into `art/icon/`: `ic_launcher.png` at ×2, ×3, ×4, ×6 and ×8 for the API 24 and
+25 devices that still need a legacy icon, and `ic_launcher_foreground.png` — the
+24 px art centred in 36, exactly the central 72 dp of 108 — at ×3, ×6, ×9 and
+×12, paired in `mipmap-anydpi-v26/` with an EGA-1 background. Whole factors
+only, which is why hdpi has no adaptive foreground: it would want ×4.5.
+
+No round variant, and no `android:roundIcon`. A circle inscribed in the 24 px
+square clips the outer edge of both ears. The four *corners* are bare ground, as
+the rules below require, but a circle cuts everything between them too and the
+ears sit near the top edge rather than in a corner. From API 26 the adaptive
+icon handles a round mask correctly by construction; below it the square icon is
+used, which beats shipping an asset known to be trimmed.
+
 `skyline.png` is 460 px wide and gets cropped from the right to the real canvas
 width. In the test scene the band is anchored 45 px above the base of the
 buildings; flush with the bottom edge of the screen it is completely hidden by

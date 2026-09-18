@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- EGA 1, the same ground the 24x24 icon is drawn on, so the adaptive
+         background and the art's own edge meet invisibly. -->
+    <color name="ic_launcher_background">#0000AA</color>
+</resources>
