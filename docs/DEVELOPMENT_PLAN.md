@@ -172,12 +172,50 @@ throwing-bambu/
   that looks like a release but cannot be parsed fails the build. Play accepts a
   `versionCode` once and never again, so it is derived rather than written down.
 - **Releases:** pushing `vX.Y.Z` runs `.github/workflows/release.yml`, which re-runs style
-  and tests, refuses to continue if the tag and the built version disagree, and publishes a
-  GitHub Release with the release bundle and a debug APK. The bundle is **unsigned** until
-  T-52 gives it a keystore.
+  and tests, refuses to continue if the tag and the built version disagree, builds and signs
+  the bundle, checks it really is signed, and publishes a GitHub Release with it and a debug
+  APK. See "The upload key" below.
 - **Quality:** `ktlint` + `detekt` in the pipeline since M0. Adding them in M7 would mean 400 warnings at once.
 - **Coverage:** no percentage target. The contract is the list of 12 mandatory tests in §15 plus the ones this plan adds.
 - **Any change to a constant in `G`** requires updating `DEVELOPMENT_SPEC.md` in the **same commit**. That is the rule in §0 and it is reviewed.
+
+### The upload key
+
+Play App Signing holds the key that signs what people install, and every app created since
+2021 must use it. What this repository handles is the **upload key**: it only proves to Play
+that an upload is ours, and Google can reset it if it is lost. That asymmetry is the whole
+point — losing an upload key is a support ticket, losing an app signing key would be the end
+of the app.
+
+It is generated once, on a machine that is not CI, and never enters the repository:
+
+```bash
+keytool -genkeypair -v -storetype PKCS12 -keystore upload.jks -alias upload \
+  -keyalg RSA -keysize 4096 -validity 10000
+```
+
+`-validity 10000` puts the expiry around 2053. Play refuses a key that expires before 22
+October 2033, so a default validity would be rejected. **Back the file and its passwords up
+somewhere that is not that machine** before going any further.
+
+CI reads the key from four repository secrets (Settings → Secrets and variables → Actions).
+`release.yml` checks all four are present before it builds anything, decodes the keystore
+outside the checkout — inside it, the untracked file would make the tree dirty and the
+version would become `X.Y.Z-dirty` — and deletes it whatever happens afterwards:
+
+| Secret | Value |
+|---|---|
+| `UPLOAD_KEYSTORE_BASE64` | output of `base64 -w0 upload.jks` |
+| `UPLOAD_KEYSTORE_PASSWORD` | the store password |
+| `UPLOAD_KEY_ALIAS` | `upload` |
+| `UPLOAD_KEY_PASSWORD` | the key password |
+
+To build a signed release on a developer machine, the same four values go in
+`keystore.properties` at the repository root — `storeFile`, `storePassword`, `keyAlias`,
+`keyPassword` — which `.gitignore` keeps out. Environment variables win over the file, which
+is how CI passes them. With neither, a release build still runs and comes out unsigned: that
+is what keeps R8 and resource shrinking testable by anyone, and why `release.yml` verifies
+the signature with `jarsigner` instead of assuming it.
 
 ---
 
@@ -199,7 +237,7 @@ throwing-bambu/
 
 **Unplanned additions:**
 
-- Every run publishes the **debug APK** as an artifact (`apk-debug`, 14 days), built after the tests: red build, no APK. A tag `vX.Y.Z` additionally publishes a GitHub Release with an **unsigned** release bundle — enough to prove R8 and resource shrinking survive the release build; the keystore that would make it uploadable arrives in M7 (T-52).
+- Every run publishes the **debug APK** as an artifact (`apk-debug`, 14 days), built after the tests: red build, no APK. A tag `vX.Y.Z` additionally publishes a GitHub Release with the signed release bundle — see "The upload key" in §4.
 - A second CI job runs `:core:test` on **macOS**. §17.1 warns about floating-point divergence between JVM implementations; from M1 on this catches it in the commit that introduces it, not in M6 as a networking bug.
 
 **DoD:** ✅ CI green on both jobs. ⏳ `app` starting on a device is the one item still unverified: it needs a phone or an emulator, which this environment does not have.
@@ -360,7 +398,7 @@ The truncation test is exhaustive rather than representative — **every prefix 
 | T-49 | Transport selection: Nearby when GMS is present, RFCOMM otherwise; manual override in settings (§17.2 — not a secondary mode) | 0.4 d |
 | T-50 | Audio: throw, explosion, victory, defeat; `SoundPool`, respects silent mode | 0.6 d |
 | T-51 | Persistent settings (DataStore): `speedMultiplier`, sound, default AI level, rounds to win | 0.4 d |
-| T-52 | Release build: signing keystore and secrets, so `release.yml` publishes a **signed** bundle instead of an unsigned one; verify that R8 does not break the determinism tests | 0.5 d |
+| 🟡 T-52 | Release build: **done in CI** — R8, `proguard-rules`, signing from GitHub secrets, signature verified before publishing. What remains is the on-device half: install a release build and confirm R8 has not broken the determinism the engine depends on | 0.2 d |
 | ✅ T-53a | **Localisation, brought forward from M7**: every string in resources, five languages (en/es/ca/fr/de), in-game language picker | 0.4 d |
 | T-53b | Polish: transitions, empty states, accessibility of the numeric controls | 0.4 d |
 

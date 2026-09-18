@@ -42,6 +42,14 @@ captures/
 # The wrapper IS versioned: it is what pins the same Gradle version in CI.
 !gradle/wrapper/gradle-wrapper.jar
 
+# --- Signing ---
+# The upload key and its passwords never enter the repository. CI gets them from GitHub
+# secrets; a machine building a signed release locally keeps them in keystore.properties,
+# which lives here and is never committed.
+*.jks
+*.keystore
+keystore.properties
+
 # Python
 __pycache__/
 *.py[cod]

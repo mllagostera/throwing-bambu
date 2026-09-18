@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -125,6 +127,58 @@ tasks.register("printVersion") {
     }
 }
 
+/**
+ * The *upload* key — not the key that signs what people install. Play App Signing, which
+ * every app created since 2021 must use, holds that one; this key only proves to Play that
+ * an upload is ours. Google can reset it if it is ever lost, which is why it is the only
+ * one we are allowed to hold: losing the upload key is a support ticket, losing an app
+ * signing key would be the end of the app.
+ *
+ * CI passes the four values in the environment, out of GitHub secrets. A machine building
+ * a signed release locally puts the same four in `keystore.properties`, which .gitignore
+ * keeps out of the repository. With neither, the release build still runs and comes out
+ * unsigned: that is what lets anyone exercise R8 and resource shrinking, and it is why the
+ * release workflow verifies the signature instead of assuming it.
+ */
+data class UploadKey(
+    val store: File,
+    val storePassword: String,
+    val alias: String,
+    val keyPassword: String,
+)
+
+fun uploadKey(): UploadKey? {
+    val file = rootProject.file("keystore.properties")
+    val properties = Properties()
+    if (file.isFile) file.inputStream().use(properties::load)
+
+    fun setting(
+        variable: String,
+        property: String,
+    ): String? =
+        providers.environmentVariable(variable).orNull?.takeIf { it.isNotBlank() }
+            ?: properties.getProperty(property)?.takeIf { it.isNotBlank() }
+
+    val path = setting("UPLOAD_KEYSTORE_FILE", "storeFile") ?: return null
+    val store = rootProject.file(path)
+    // Past this point the key was meant to be used, so a half-configured one is an error
+    // and not a quiet fallback to an unsigned build that nobody would notice until Play
+    // refused it.
+    if (!store.isFile) error("Upload keystore configured but missing: no file at $store.")
+    return UploadKey(
+        store = store,
+        storePassword =
+            setting("UPLOAD_KEYSTORE_PASSWORD", "storePassword")
+                ?: error("Upload keystore configured but UPLOAD_KEYSTORE_PASSWORD / storePassword is not set."),
+        alias =
+            setting("UPLOAD_KEY_ALIAS", "keyAlias")
+                ?: error("Upload keystore configured but UPLOAD_KEY_ALIAS / keyAlias is not set."),
+        keyPassword =
+            setting("UPLOAD_KEY_PASSWORD", "keyPassword")
+                ?: error("Upload keystore configured but UPLOAD_KEY_PASSWORD / keyPassword is not set."),
+    )
+}
+
 android {
     namespace = "com.vansid.panda.app"
     compileSdk = 35
@@ -137,8 +191,22 @@ android {
         versionName = appVersion.name
     }
 
+    signingConfigs {
+        uploadKey()?.let { key ->
+            create("upload") {
+                storeFile = key.store
+                storePassword = key.storePassword
+                keyAlias = key.alias
+                keyPassword = key.keyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // Null when no key is configured, which builds an unsigned release. Play
+            // rejects that, so `release.yml` refuses to publish one.
+            signingConfig = signingConfigs.findByName("upload")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
