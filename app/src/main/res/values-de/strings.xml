@@ -8,7 +8,6 @@
     <string name="setup_title">Spieleinstellungen</string>
     <string name="setup_rounds">Best of 5 — wer zuerst 3 Runden gewinnt</string>
     <string name="setup_start">Starten</string>
-    <string name="setup_start_fixed">Mit festem Startwert starten</string>
 
     <string name="level_easy">Leicht</string>
     <string name="level_medium">Mittel</string>

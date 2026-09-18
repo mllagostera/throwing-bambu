@@ -44,7 +44,6 @@ import dev.bambu.app.settings.AppLocale
 import dev.bambu.app.settings.LocaleStore
 import dev.bambu.app.settings.WithAppLocale
 import dev.bambu.app.ui.bluetooth.bluetoothDestinations
-import dev.bambu.app.ui.game.GameScreen
 import dev.bambu.app.ui.icon.BambuIcons
 import dev.bambu.app.ui.icon.ButtonIcon
 import dev.bambu.app.ui.theme.BambuTheme
@@ -53,7 +52,6 @@ import dev.bambu.core.AiLevel
 /** The level slot carries this when there is no AI: two people at the same device. */
 const val NO_LEVEL = "NONE"
 
-internal const val FIXED_SEED = 20260913L
 internal const val ROUNDS_TO_WIN = 3
 
 /**
@@ -106,39 +104,8 @@ private fun BambuNavHost(
                 onBack = { navController.popBackStack() },
             )
         }
-        composable(Routes.SETUP) { entry ->
-            val solo = entry.arguments?.getString(Routes.ARG_SOLO).toBoolean()
-            SetupScreen(
-                solo = solo,
-                onStart = { seed, rounds, level -> navController.navigate(Routes.game(seed, rounds, level)) },
-            )
-        }
-        composable(Routes.GAME) { entry ->
-            val seed = entry.arguments?.getString(Routes.ARG_SEED)?.toLongOrNull() ?: 0L
-            val rounds = entry.arguments?.getString(Routes.ARG_ROUNDS)?.toIntOrNull() ?: ROUNDS_TO_WIN
-            val level =
-                entry.arguments
-                    ?.getString(Routes.ARG_LEVEL)
-                    ?.takeIf { it != NO_LEVEL }
-                    ?.let { runCatching { AiLevel.valueOf(it) }.getOrNull() }
-            GameScreen(
-                seed = seed,
-                roundsToWin = rounds,
-                aiLevel = level,
-                onFinished = { winner ->
-                    navController.navigate(Routes.result(winner)) { popUpTo(Routes.MENU) }
-                },
-            )
-        }
+        matchDestinations(navController)
         bluetoothDestinations(navController)
-        composable(Routes.RESULT) { entry ->
-            val winner = entry.arguments?.getString(Routes.ARG_WINNER)?.toIntOrNull() ?: 0
-            ResultScreen(
-                winner = winner,
-                onPlayAgain = { navController.navigate(Routes.SETUP) { popUpTo(Routes.MENU) } },
-                onMenu = { navController.popBackStack(Routes.MENU, inclusive = false) },
-            )
-        }
     }
 }
 
@@ -153,9 +120,10 @@ object Routes {
     const val ARG_WINNER = "winner"
     const val ARG_LEVEL = "level"
     const val ARG_SOLO = "solo"
+    const val ARG_MODE = "mode"
     const val SETUP = "setup/{$ARG_SOLO}"
     const val GAME = "game/{$ARG_SEED}/{$ARG_ROUNDS}/{$ARG_LEVEL}"
-    const val RESULT = "result/{$ARG_WINNER}"
+    const val RESULT = "result/{$ARG_WINNER}/{$ARG_MODE}"
 
     fun setup(solo: Boolean) = "setup/$solo"
 
@@ -165,7 +133,18 @@ object Routes {
         level: AiLevel?,
     ) = "game/$seed/$rounds/${level?.name ?: NO_LEVEL}"
 
-    fun result(winner: Int) = "result/$winner"
+    fun result(
+        winner: Int,
+        mode: MatchMode,
+    ) = "result/$winner/${mode.name}"
+
+    /** Where a match of this kind is started, for the result screen to return to. */
+    fun playAgain(mode: MatchMode) =
+        when (mode) {
+            MatchMode.SOLO -> setup(solo = true)
+            MatchMode.LOCAL -> setup(solo = false)
+            MatchMode.BLUETOOTH -> BLUETOOTH
+        }
 }
 
 @Composable
@@ -270,76 +249,6 @@ private fun SettingsScreen(
         }
     }
 }
-
-@Composable
-private fun SetupScreen(
-    solo: Boolean,
-    onStart: (Long, Int, AiLevel?) -> Unit,
-) {
-    var level by remember { mutableStateOf(AiLevel.MEDIUM) }
-
-    ScreenScaffold {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(stringResource(R.string.setup_title), style = MaterialTheme.typography.headlineSmall)
-            Text(stringResource(R.string.setup_rounds))
-
-            if (solo) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for (option in AiLevel.entries) {
-                        FilterChip(
-                            selected = option == level,
-                            onClick = { level = option },
-                            label = { Text(stringResource(option.labelRes())) },
-                        )
-                    }
-                }
-            }
-
-            val chosen = if (solo) level else null
-            Button(onClick = { onStart(System.currentTimeMillis(), ROUNDS_TO_WIN, chosen) }) {
-                Text(stringResource(R.string.setup_start))
-            }
-            // A known seed makes a bug reproducible: the same match, shot for shot.
-            Button(onClick = { onStart(FIXED_SEED, ROUNDS_TO_WIN, chosen) }) {
-                Text(stringResource(R.string.setup_start_fixed))
-            }
-        }
-    }
-}
-
-@Composable
-private fun ResultScreen(
-    winner: Int,
-    onPlayAgain: () -> Unit,
-    onMenu: () -> Unit,
-) {
-    ScreenScaffold {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = stringResource(R.string.result_winner, winner + 1),
-                style = MaterialTheme.typography.headlineMedium,
-            )
-            Button(onClick = onPlayAgain) { Text(stringResource(R.string.result_play_again)) }
-            Button(onClick = onMenu) { Text(stringResource(R.string.result_menu)) }
-        }
-    }
-}
-
-/** The AI levels are shown translated; the enum names stay as the contract wrote them. */
-private fun AiLevel.labelRes(): Int =
-    when (this) {
-        AiLevel.EASY -> R.string.level_easy
-        AiLevel.MEDIUM -> R.string.level_medium
-        AiLevel.HARD -> R.string.level_hard
-    }
 
 /**
  * The logo at a whole-number scale.

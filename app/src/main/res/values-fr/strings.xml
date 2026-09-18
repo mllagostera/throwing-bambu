@@ -8,7 +8,6 @@
     <string name="setup_title">Réglages de la partie</string>
     <string name="setup_rounds">Au meilleur des 5 — le premier à 3 manches</string>
     <string name="setup_start">Commencer</string>
-    <string name="setup_start_fixed">Commencer avec une graine fixe</string>
 
     <string name="level_easy">Facile</string>
     <string name="level_medium">Moyen</string>

@@ -4,10 +4,13 @@ import android.os.Build
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-import dev.bambu.app.ui.FIXED_SEED
+import dev.bambu.app.ui.MatchMode
 import dev.bambu.app.ui.ROUNDS_TO_WIN
 import dev.bambu.app.ui.Routes
 import dev.bambu.app.ui.game.GameScreen
+
+/** Stands in the seed slot of the remote route; the real one arrives in the handshake. */
+private const val PLACEHOLDER_SEED = 0L
 
 /**
  * `Menu → gate → pairing → game`, the Bluetooth branch (§12, §14).
@@ -37,12 +40,14 @@ internal fun NavGraphBuilder.bluetoothDestinations(navController: NavHostControl
         // The seed and the width are the host's, and arrive through the handshake rather
         // than through the route; these two are the placeholders GameScreen ignores.
         GameScreen(
-            seed = FIXED_SEED,
+            seed = PLACEHOLDER_SEED,
             roundsToWin = ROUNDS_TO_WIN,
             aiLevel = null,
             remote = true,
             onFinished = { winner ->
-                navController.navigate(Routes.result(winner)) { popUpTo(Routes.MENU) }
+                navController.navigate(Routes.result(winner, MatchMode.BLUETOOTH)) {
+                    popUpTo(Routes.MENU)
+                }
             },
         )
     }
