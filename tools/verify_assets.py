@@ -27,6 +27,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 ART = os.path.join(ROOT, "art")
 SPRITES = os.path.join(ART, "sprites")
 ICON = os.path.join(ART, "icon")
+MIPMAP = os.path.join(ROOT, "app", "src", "main", "res")
 
 EGA = {
     (0x00, 0x00, 0x00), (0x00, 0x00, 0xAA), (0x00, 0xAA, 0x00), (0x00, 0xAA, 0xAA),
@@ -309,6 +310,55 @@ def check_icon():
     print(f"  icon: ground {ground}, four corners clear, opaque")
 
 
+def check_round_icons():
+    """The generated round launcher icons: the whole drawing survived the mask.
+
+    The obvious check is the wrong one. Looking for opaque pixels outside the
+    circle can never fail, because the file is already masked -- whatever the
+    circle cut is transparent by the time it is written. The question is not
+    what lies outside the circle, it is what went missing on the way in.
+
+    So this counts ink instead. The round icon is the 24 px art at some whole
+    factor, so its ink must be exactly the source's ink times that factor
+    squared. One pixel short means the circle ate part of the drawing, which is
+    the failure that shipped once already: the ears came out flattened and the
+    corner check above -- necessary, but not sufficient -- said nothing.
+    """
+    source = Image.open(os.path.join(ICON, "icon.png")).convert("RGBA")
+    spx = source.load()
+    ground = spx[0, 0][:3]
+    expected = sum(
+        1
+        for y in range(source.height)
+        for x in range(source.width)
+        if spx[x, y][3] != 0 and spx[x, y][:3] != ground
+    )
+
+    found = 0
+    for bucket in ("mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"):
+        path = os.path.join(MIPMAP, f"mipmap-{bucket}", "ic_launcher_round.png")
+        if not os.path.exists(path):
+            continue
+        found += 1
+        img = Image.open(path).convert("RGBA")
+        px = img.load()
+        ink = sum(
+            1
+            for y in range(img.height)
+            for x in range(img.width)
+            if px[x, y][3] != 0 and px[x, y][:3] != ground
+        )
+        factors = [f for f in range(1, img.width // source.width + 1)
+                   if ink == expected * f * f]
+        if not factors:
+            fail(f"ic_launcher_round ({bucket}): {ink} ink pixels is not "
+                 f"{expected} at any whole scale; the circle clipped the drawing")
+    if not found:
+        fail("no mipmap-*/ic_launcher_round.png; run tools/gen_sprites.py")
+    else:
+        print(f"  round icons: {found} densities, the drawing survives the mask")
+
+
 def check_extras():
     gpl = os.path.join(ART, "palette", "ega16.gpl")
     if not os.path.exists(gpl):
@@ -337,6 +387,7 @@ def main():
     check_skyline()
     check_logo()
     check_icon()
+    check_round_icons()
     check_extras()
     print()
     for w in warnings:

@@ -100,11 +100,81 @@ def piece(name, canvas, cell=None):
 # absent. Android downscales xhdpi for those devices, and one filtered
 # downscale by the system beats shipping a half-pixel grid of our own.
 LEGACY_SCALES = {"mdpi": 2, "hdpi": 3, "xhdpi": 4, "xxhdpi": 6, "xxxhdpi": 8}
+LEGACY_DP = 48
+
+# How much of a round icon's diameter the art should span. 0.75 is what the
+# rendered comparison looked best at; the exact factor is then whatever whole
+# number comes closest to it without losing a pixel of ink.
+ROUND_FILL = 0.75
+
+# EGA 1, the index art_icon.py draws its ground in.
+GROUND = 1
 ADAPTIVE_SCALES = {"mdpi": 3, "xhdpi": 6, "xxhdpi": 9, "xxxhdpi": 12}
 
 # The 24 px art centred in 36 px: exactly the central 72 dp of 108 that a
 # launcher mask is guaranteed to leave alone.
 ADAPTIVE_CANVAS = 36
+
+
+def _ink(c: Canvas, ground: int) -> list:
+    """Pixels that are neither transparent nor bare ground."""
+    return [(x, y) for y in range(c.h) for x in range(c.w)
+            if c.px[y][x] not in (ega.T, ground)]
+
+
+def _round_icon(icon: Canvas, size: int, ground: int) -> Canvas:
+    """The icon inside a circle of `size`, at the whole factor that fits it.
+
+    The INK is centred on the circle, not the canvas. The drawing is not
+    centred inside its own 24 px square -- the cane runs out to the left edge
+    and down to the bottom -- so centring the square leaves the panda visibly
+    up and to the left of a circle that has margin to spare. Centring the ink
+    both fixes that and buys room for a larger factor.
+
+    The factor is measured, never assumed: every candidate is scaled, placed
+    and checked pixel by pixel against the circle, and only those that lose no
+    ink are eligible. Of those, the one closest to ROUND_FILL wins.
+
+    That makes "the whole drawing survives the mask" a property of the
+    generator rather than something somebody checked once. If the drawing ever
+    grows towards its corners, the icon quietly gets smaller instead of
+    quietly getting clipped.
+    """
+    ink = _ink(icon, ground)
+    xs = [x for x, _ in ink]
+    ys = [y for _, y in ink]
+    box = (min(xs), min(ys), max(xs) - min(xs) + 1, max(ys) - min(ys) + 1)
+    centre = (size - 1) / 2
+    radius2 = (size / 2) ** 2
+
+    best = None
+    for factor in range(1, size // icon.w + 1):
+        offset_x = (size - box[2] * factor) // 2 - box[0] * factor
+        offset_y = (size - box[3] * factor) // 2 - box[1] * factor
+        fits = all(
+            (offset_x + x * factor + dx - centre) ** 2 +
+            (offset_y + y * factor + dy - centre) ** 2 <= radius2
+            for (x, y) in ink
+            for dy in range(factor)
+            for dx in range(factor)
+        )
+        if not fits:
+            continue
+        span = max(box[2], box[3]) * factor / size
+        distance = abs(span - ROUND_FILL)
+        if best is None or distance < best[0]:
+            best = (distance, factor, offset_x, offset_y)
+    if best is None:
+        raise ValueError(f"no whole factor of the icon fits a {size}px circle")
+
+    _, factor, offset_x, offset_y = best
+    canvas = Canvas(size, size, fill=ground)
+    canvas.blit(_zoom(icon, factor), offset_x, offset_y)
+    for y in range(size):
+        for x in range(size):
+            if (x - centre) ** 2 + (y - centre) ** 2 > radius2:
+                canvas.px[y][x] = ega.T
+    return canvas
 
 
 def _mipmaps(icon: Canvas) -> None:
@@ -115,14 +185,12 @@ def _mipmaps(icon: Canvas) -> None:
     invisibly, and there is no risk of punching a hole through the middle of
     the head by making one palette index transparent.
 
-    No round variant is written, and the manifest declares no `roundIcon`.
-    A circle inscribed in the 24 px square clips the outer edge of both ears:
-    art_icon keeps the four *corners* as bare ground, but a circle cuts
-    everything between them too, and the ears sit near the top edge rather
-    than in a corner. From API 26 the adaptive icon above handles a round mask
-    correctly by construction, and on the API 24-25 devices that would use a
-    round PNG the square one is used instead -- which is better than shipping
-    an asset we know to be trimmed.
+    The round variant is scaled DOWN rather than filled to the edge. A circle
+    inscribed in the full-bleed square clips about 1 % of the ink -- which
+    sounds negligible and is not: those pixels are the outer edge of both ears
+    and the two ends of the cane, which is to say the silhouette art_icon.py
+    says the panda is read from. Rendered side by side, the inset version is
+    plainly the better icon as well as the correct one.
     """
     padded = Canvas(ADAPTIVE_CANVAS, ADAPTIVE_CANVAS)
     offset = (ADAPTIVE_CANVAS - icon.w) // 2
@@ -132,6 +200,12 @@ def _mipmaps(icon: Canvas) -> None:
         folder = os.path.join(RES, f"mipmap-{bucket}")
         os.makedirs(folder, exist_ok=True)
         save_png(_zoom(icon, factor), os.path.join(folder, "ic_launcher.png"))
+        # mdpi gets no round icon. Whole factors on a 24 px drawing cannot fill
+        # a 48 px circle past 46 %, which reads as a mistake rather than as an
+        # icon; one filtered downscale from hdpi keeps the proportions instead.
+        if bucket != "mdpi":
+            save_png(_round_icon(icon, icon.w * factor, GROUND),
+                     os.path.join(folder, "ic_launcher_round.png"))
 
     for bucket, factor in ADAPTIVE_SCALES.items():
         folder = os.path.join(RES, f"mipmap-{bucket}")
