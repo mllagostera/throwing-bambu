@@ -10,8 +10,10 @@
         android:theme="@style/Theme.ThrowingBambu">
 
         <!-- D-04: the logical canvas only makes sense in landscape. -->
+        <!-- Spelled out: the applicationId (com.vansid.panda) is not the namespace
+             (com.vansid.panda.app), and a leading dot invites confusion between the two. -->
         <activity
-            android:name=".MainActivity"
+            android:name="com.vansid.panda.app.MainActivity"
             android:exported="true"
             android:screenOrientation="sensorLandscape"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode">

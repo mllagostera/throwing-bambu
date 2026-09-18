@@ -27,6 +27,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The version comes from `git describe` (app/build.gradle.kts). The default
+          # shallow clone carries no tags, so the APK below would be named 0.0.0-dev
+          # however many releases the repository has.
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -53,15 +58,17 @@ jobs:
 
       # The APK is built in this same job, after the tests: if anything is red there is
       # no APK to download. It is the debug one, signed with the debug key and therefore
-      # installable as is (`adb install`, or by opening it on the phone). The release APK
-      # needs its own keystore and arrives in M7 (T-52).
+      # installable as is (`adb install`, or by opening it on the phone). The signed
+      # release bundle is not built here — only a tag produces one, in release.yml.
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug
 
       - name: Give the APK a recognisable name
         run: |
           set -euo pipefail
-          version=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          # Asked of the build rather than read out of it: the version is derived from the
+          # git tag, and a regex over the build file would find the code that derives it.
+          version=$(./gradlew -q :app:printVersion | sed -n 's/^versionName=//p')
           mkdir -p artefactos
           cp app/build/outputs/apk/debug/app-debug.apk \
              "artefactos/throwing-bambu-${version}-debug-${GITHUB_SHA::7}.apk"
@@ -84,17 +91,8 @@ jobs:
           # is worse than a broken build.
           if-no-files-found: error
 
-  # Determinism (§17.1) cannot be checked on a single JVM: the same fingerprint tests run
-  # on Linux and on macOS. From M1 on, this is where a floating-point divergence shows up,
-  # long before it would appear as a networking bug in M6.
+  # The second JVM. Defined in its own file because release.yml calls the same one: a tag
+  # does not run this workflow, and a release skipping the determinism check was the one
+  # gap worth closing first.
   determinism:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - name: :core tests on a different JVM
-        run: ./gradlew :core:test
+    uses: ./.github/workflows/determinism.yml
