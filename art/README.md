@@ -106,6 +106,38 @@ destroy the nearest-neighbour look. Load them with `BitmapFactory.Options` with
 `inScaled = false` and paint them with a `Paint` with filtering off
 (`isFilterBitmap = false`, `isAntiAlias = false`).
 
+The launcher icon is the exception, because Android resolves it by density
+itself. `gen_sprites.py` writes it into `app/src/main/res/mipmap-*` as well as
+into `art/icon/`: `ic_launcher.png` at ×2, ×3, ×4, ×6 and ×8 for the API 24 and
+25 devices that still need a legacy icon, and `ic_launcher_foreground.png` — the
+24 px art centred in 36, exactly the central 72 dp of 108 — at ×3, ×6, ×9 and
+×12, paired in `mipmap-anydpi-v26/` with an EGA-1 background. Whole factors
+only, which is why hdpi has no adaptive foreground: it would want ×4.5.
+
+`ic_launcher_round.png` is scaled **down** rather than filled to the edge, and
+is positioned by its ink rather than by its canvas. Two findings, both of which
+only showed up by rendering the masked result and looking at it:
+
+- A circle inscribed in the full-bleed square clips about 1 % of the ink. That
+  sounds negligible and is not: those pixels are the outer edge of both ears and
+  the two ends of the cane, which is exactly the silhouette this drawing is read
+  from. The four *corners* are bare ground as the rules below require, but a
+  circle cuts everything between them too, and the ears sit near the top edge
+  rather than in a corner. Clearing the corners is necessary, not sufficient.
+- The drawing is not centred inside its own square — the cane runs out to the
+  left edge and down to the bottom — so centring the square leaves the panda up
+  and to the left of a circle with margin to spare.
+
+`gen_sprites.py` therefore measures rather than assumes: every whole factor is
+placed and checked pixel by pixel against the circle, and the largest that loses
+no ink wins. `verify_assets.py` then re-checks the shipped files by ink count,
+because the obvious test — opaque pixels outside the circle — can never fail on
+a file that is already masked.
+
+mdpi gets no round icon. Whole factors on a 24 px drawing cannot fill a 48 px
+circle past 46 %, which reads as a mistake rather than as an icon; one filtered
+downscale from hdpi keeps the proportions instead.
+
 `skyline.png` is 460 px wide and gets cropped from the right to the real canvas
 width. In the test scene the band is anchored 45 px above the base of the
 buildings; flush with the bottom edge of the screen it is completely hidden by
