@@ -1,12 +1,25 @@
 name: CI
 
+# A branch with an open pull request used to run this twice over: once for the push
+# and once for the pull request. The concurrency group below cannot collapse the pair,
+# because a push is `refs/heads/<branch>` and a pull request is `refs/pull/<n>/merge` --
+# different groups, so neither cancels the other.
+#
+# So `push` is narrowed to the default branch and the branches are covered by
+# `pull_request` alone. That is also the better of the two runs: a pull request is
+# tested on the branch ALREADY MERGED into its base, which catches a change that is
+# green on its own and red once it lands -- exactly what a push run cannot see.
 on:
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
+  # For a branch with no pull request yet: the Android modules cannot be compiled
+  # without the SDK, so CI is sometimes the first thing that type-checks a file, and
+  # there has to be a way to ask for it before opening anything.
+  workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
