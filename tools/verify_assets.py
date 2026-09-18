@@ -13,8 +13,8 @@ Piece by piece it checks:
   - the declared pivot falls where the document says;
   - and the specific constraints: the panda's collision box, the radius of the
     explosion's peak frame, the facades' key pixels (no green base, which would
-    eat the cane, and no white one, which would eat the panda) and the cropping
-    behaviour of the skyline.
+    eat the cane, and no white one, which would eat the panda), the cropping
+    behaviour of the skyline, and the launcher icon's corners and opacity.
 """
 
 import math
@@ -26,6 +26,7 @@ from PIL import Image
 ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 ART = os.path.join(ROOT, "art")
 SPRITES = os.path.join(ART, "sprites")
+ICON = os.path.join(ART, "icon")
 
 EGA = {
     (0x00, 0x00, 0x00), (0x00, 0x00, 0xAA), (0x00, 0xAA, 0x00), (0x00, 0xAA, 0xAA),
@@ -47,6 +48,7 @@ INVENTORY = {
     "facades.png": (80, 16, 16, 16, 5),
     "skyline.png": (460, 80, None, None, 1),
     "logo.png":    (200, 60, None, None, 1),
+    "icon.png":    (24, 24, None, None, 1),
 }
 
 failures = []
@@ -61,8 +63,8 @@ def warn(msg):
     warnings.append(msg)
 
 
-def load(name):
-    img = Image.open(os.path.join(SPRITES, name)).convert("RGBA")
+def load(name, folder=SPRITES):
+    img = Image.open(os.path.join(folder, name)).convert("RGBA")
     return img, img.load()
 
 
@@ -86,13 +88,13 @@ def bbox(points):
     return min(xs), min(ys), max(xs), max(ys)
 
 
-def common(name):
+def common(name, folder=SPRITES):
     """Palette, binary alpha and dimensions. Returns (img, px)."""
-    path = os.path.join(SPRITES, name)
+    path = os.path.join(folder, name)
     if not os.path.exists(path):
         fail(f"{name}: missing")
         return None, None
-    img, px = load(name)
+    img, px = load(name, folder)
     w, h, cw, ch, n = INVENTORY[name]
     if (img.width, img.height) != (w, h):
         fail(f"{name}: canvas {img.width}x{img.height}, declared {w}x{h}")
@@ -274,6 +276,39 @@ def check_logo():
     print(f"  logo: box {x0},{y0}-{x1},{y1} in {img.width}x{img.height}")
 
 
+def check_icon():
+    """The launcher icon (art/icon/), which the system masks and rescales.
+
+    Two constraints no other piece has. Every launcher masks the square
+    differently and some mask it to a circle, so whatever sits in the corners is
+    the first thing to go: nothing but the ground may be there. And the icon is
+    opaque, because a hole would show the wallpaper through the middle of it.
+    """
+    img, px = common("icon.png", ICON)
+    if not img:
+        return
+    ground = px[0, 0][:3]
+    corners = ((0, 0, "top-left"), (img.width - 3, 0, "top-right"),
+               (0, img.height - 3, "bottom-left"),
+               (img.width - 3, img.height - 3, "bottom-right"))
+    for cx, cy, label in corners:
+        intruder = next(
+            (px[x, y][:3]
+             for y in range(cy, cy + 3) for x in range(cx, cx + 3)
+             if px[x, y][:3] != ground),
+            None,
+        )
+        if intruder:
+            fail(f"icon: the {label} corner holds {intruder}; a circular mask "
+                 f"would clip it")
+    holes = sum(1 for y in range(img.height) for x in range(img.width)
+                if px[x, y][3] == 0)
+    if holes:
+        fail(f"icon: {holes} transparent pixels; the icon must be opaque or the "
+             f"wallpaper shows through it")
+    print(f"  icon: ground {ground}, four corners clear, opaque")
+
+
 def check_extras():
     gpl = os.path.join(ART, "palette", "ega16.gpl")
     if not os.path.exists(gpl):
@@ -301,6 +336,7 @@ def main():
     check_facades()
     check_skyline()
     check_logo()
+    check_icon()
     check_extras()
     print()
     for w in warnings:
