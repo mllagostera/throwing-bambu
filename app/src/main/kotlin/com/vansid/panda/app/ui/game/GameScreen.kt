@@ -48,6 +48,7 @@ import com.vansid.panda.app.ui.bluetooth.BluetoothSession
 import com.vansid.panda.app.ui.theme.playfieldScrim
 import com.vansid.panda.core.AiLevel
 import com.vansid.panda.core.G
+import com.vansid.panda.core.Shot
 import com.vansid.panda.core.logicalWidth
 
 /**
@@ -238,31 +239,51 @@ private fun Controls(
             modifier = Modifier.weight(1f),
         )
 
-        val previous = state.lastShots[state.currentPlayer]
-        TextButton(
-            enabled = state.canAim && previous != null,
-            contentPadding = PaddingValues(horizontal = 8.dp),
-            onClick = {
-                previous?.let {
-                    angleText = it.angle.toString()
-                    powerText = it.power.toString()
-                }
+        ShotActions(
+            state = state,
+            angle = angle,
+            power = power,
+            onRepeat = {
+                angleText = it.angle.toString()
+                powerText = it.power.toString()
             },
-        ) {
-            Text(stringResource(R.string.game_repeat), style = MaterialTheme.typography.labelLarge)
-        }
-        Button(
-            enabled = state.canAim && angle != null && power != null,
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            onClick = {
-                if (angle != null && power != null) onThrow(angle, power)
-            },
-        ) {
-            Text(
-                text = stringResource(if (state.canAim) R.string.game_throw else R.string.game_waiting),
-                style = MaterialTheme.typography.labelLarge,
-            )
-        }
+            onThrow = onThrow,
+        )
+    }
+}
+
+/**
+ * The two buttons that close the bar. `Repeat` is the only thing on this screen that
+ * remembers a previous shot, and it does not throw one: it writes the numbers back into
+ * the fields, so the player can adjust before committing to them again.
+ */
+@Composable
+private fun ShotActions(
+    state: GameUiState,
+    angle: Int?,
+    power: Int?,
+    onRepeat: (Shot) -> Unit,
+    onThrow: (Int, Int) -> Unit,
+) {
+    val previous = state.lastShots[state.currentPlayer]
+    TextButton(
+        enabled = state.canAim && previous != null,
+        contentPadding = PaddingValues(horizontal = 8.dp),
+        onClick = { previous?.let(onRepeat) },
+    ) {
+        Text(stringResource(R.string.game_repeat), style = MaterialTheme.typography.labelLarge)
+    }
+    Button(
+        enabled = state.canAim && angle != null && power != null,
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        onClick = {
+            if (angle != null && power != null) onThrow(angle, power)
+        },
+    ) {
+        Text(
+            text = stringResource(if (state.canAim) R.string.game_throw else R.string.game_waiting),
+            style = MaterialTheme.typography.labelLarge,
+        )
     }
 }
 
