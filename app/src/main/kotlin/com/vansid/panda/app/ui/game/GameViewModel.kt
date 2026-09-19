@@ -10,6 +10,7 @@ import com.vansid.panda.core.HumanShotSource
 import com.vansid.panda.core.MatchEngine
 import com.vansid.panda.core.Rng
 import com.vansid.panda.core.Shot
+import com.vansid.panda.core.ShotSource
 import com.vansid.panda.core.net.MatchConfig
 import com.vansid.panda.core.net.RemoteMatch
 import com.vansid.panda.core.net.Transport
@@ -32,6 +33,20 @@ class GameViewModel : ViewModel() {
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
     private val human = HumanShotSource()
+
+    /**
+     * The seats a person throws from, by player index.
+     *
+     * Every [HumanShotSource] is its own rendezvous channel and the engine waits on
+     * exactly one of them, so a shot has to reach the seat whose turn it is. A hot-seat
+     * match seats two people and needs both entries; against the AI, or across a link,
+     * only one seat is ours.
+     *
+     * `humanPlayers` in the UI state is derived from this map rather than worked out
+     * separately. The two disagreeing is precisely how the second player's Throw button
+     * came to be enabled while nothing could receive what it sent.
+     */
+    private var seats: Map<Int, HumanShotSource> = emptyMap()
     private val animator = MatchAnimator(_uiState, viewModelScope)
     private val events = MatchEvents(_uiState, animator)
     private var engine: MatchEngine? = null
@@ -59,15 +74,20 @@ class GameViewModel : ViewModel() {
     ) {
         if (engine != null) return
 
-        val sources =
+        val opponent: ShotSource =
             if (aiLevel == null) {
-                listOf(human, HumanShotSource())
+                HumanShotSource()
             } else {
-                listOf(human, AiShotSource(AiOpponent(aiLevel, Rng(seed))))
+                AiShotSource(AiOpponent(aiLevel, Rng(seed)))
             }
-        _uiState.update { it.copy(humanPlayers = if (aiLevel == null) setOf(0, 1) else setOf(0)) }
+        seats =
+            buildMap {
+                put(0, human)
+                if (opponent is HumanShotSource) put(1, opponent)
+            }
+        _uiState.update { it.copy(humanPlayers = seats.keys) }
 
-        val created = MatchEngine(seed, width, sources, roundsToWin)
+        val created = MatchEngine(seed, width, listOf(human, opponent), roundsToWin)
         engine = created
         job = viewModelScope.launch { created.events.collect { events.handle(it) } }
         viewModelScope.launch { created.run() }
@@ -92,7 +112,8 @@ class GameViewModel : ViewModel() {
         val session = RemoteMatch(transport, localPlayer, human, config)
         remote = session
         engine = session.engine
-        _uiState.update { it.copy(humanPlayers = setOf(localPlayer)) }
+        seats = mapOf(localPlayer to human)
+        _uiState.update { it.copy(humanPlayers = seats.keys) }
         job = viewModelScope.launch { session.engine.events.collect { events.handle(it) } }
         viewModelScope.launch { session.run() }
     }
@@ -116,8 +137,12 @@ class GameViewModel : ViewModel() {
     ) {
         val state = _uiState.value
         if (!state.canAim) return
+        // By `currentPlayer`, which is what `canAim` asks about; `Shot.turn` is the
+        // match-wide counter and names nobody. Sending to the wrong seat does not fail,
+        // it parks on a channel with no receiver and stays there.
+        val seat = seats[state.currentPlayer] ?: return
         viewModelScope.launch {
-            human.submit(Shot(state.turn, angle, power))
+            seat.submit(Shot(state.turn, angle, power))
         }
     }
 }
