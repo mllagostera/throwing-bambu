@@ -25,7 +25,7 @@ throwing-bambu/
 └── app/           Android. Compose, rendering, navigation, audio.
 ```
 
-- `minSdk = 24`, `targetSdk = 35`, `compileSdk = 35`
+- `minSdk = 24`, `targetSdk = 36`, `compileSdk = 36`. Play raises the floor for new apps every August; 36 is what a first upload needs now.
 - Kotlin 2.x, Compose BOM, `kotlinx.coroutines`
 - `transport` depends on `core`. `app` depends on both. `core` depends on nothing.
 - Version management through `gradle/libs.versions.toml`.

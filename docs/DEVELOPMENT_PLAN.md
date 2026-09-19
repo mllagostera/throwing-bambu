@@ -186,7 +186,7 @@ throwing-bambu/
 | ID | Task | Est. | Status |
 |---|---|---|---|
 | T-01 | `settings.gradle.kts`, `libs.versions.toml`, Gradle wrapper 8.14.3 | 0.2 d | ✅ |
-| T-02 | Modules `core` (JVM), `transport` (android-lib), `app` (android-app), `minSdk 24 / target 35 / compile 35`, dependency graph of §1 | 0.15 d | ✅ |
+| T-02 | Modules `core` (JVM), `transport` (android-lib), `app` (android-app), `minSdk 24 / target 36 / compile 36`, dependency graph of §1 | 0.15 d | ✅ |
 | T-03 | Workflow `ci.yml`: JDK 17, Gradle cache, `build test`, ktlint + detekt, debug APK published as an artifact | 0.15 d | ✅ |
 | T-04 | `README.md`, own `LICENSE` and the legal note of §18 | 0.05 d | ✅ |
 
