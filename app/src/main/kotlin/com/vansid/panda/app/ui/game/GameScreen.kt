@@ -122,15 +122,22 @@ fun GameScreen(
         // The insets go on the overlays and never on the canvas above. Padding the canvas
         // would change the logical width it derives from its own size (D-04) — and for a
         // networked match that width is negotiated, not measured locally.
+        //
+        // Each bar applies its own insets rather than receiving them applied. A padding
+        // modifier shrinks what comes after it, so applied out here it would shrink the
+        // bar before the bar painted its own background, and the scrim would stop at the
+        // cutout instead of reaching the corner.
         Hud(
             state = state,
-            modifier = Modifier.align(Alignment.TopCenter).windowInsetsPadding(topInsets),
+            insets = topInsets,
+            modifier = Modifier.align(Alignment.TopCenter),
         )
 
         Controls(
             state = state,
             onThrow = viewModel::submit,
-            modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(bottomInsets),
+            insets = bottomInsets,
+            modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
 }
@@ -138,6 +145,7 @@ fun GameScreen(
 @Composable
 private fun Hud(
     state: GameUiState,
+    insets: WindowInsets,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -146,6 +154,7 @@ private fun Hud(
             modifier
                 .fillMaxWidth()
                 .background(colors.playfieldScrim)
+                .windowInsetsPadding(insets)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -190,6 +199,7 @@ private fun Hud(
 private fun Controls(
     state: GameUiState,
     onThrow: (Int, Int) -> Unit,
+    insets: WindowInsets,
     modifier: Modifier = Modifier,
 ) {
     // The text is the single source of truth, so a half-typed value is never fought over
@@ -204,6 +214,7 @@ private fun Controls(
             modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.playfieldScrim)
+                .windowInsetsPadding(insets)
                 .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
