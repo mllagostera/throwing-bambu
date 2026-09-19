@@ -67,6 +67,7 @@ object G {
     const val BUILD_H_MAX = 130
     const val SUN_W       = 20
     const val SUN_H       = 20
+    const val SUN_Y       = 28       // top edge; 0 put the disc behind the HUD bar
 }
 ```
 
@@ -234,7 +235,7 @@ windows = BooleanArray(rows * cols) { rng.nextFloat() < 0.5f }   // row-major, t
 
 7. Paint `mask` and `color`.
 8. Pandas on the buildings at index **1** and **n-2**. `x = building.x + building.width/2`, `roofY = G.H - building.height`. If either of those buildings is narrower than `PANDA_W + 4`, move to the adjacent index towards the centre.
-9. Sun at `sunX = width / 2`, `y = 0..SUN_H`.
+9. Sun at `sunX = width / 2`, `y = SUN_Y..SUN_Y + SUN_H`. `SUN_Y` is what keeps the disc out from under the HUD bar, and `SUN_Y + SUN_H` stays inside `SKY_BAND`, so no roof can ever reach it.
 
 The phases stay separate exactly as numbered — all the heights first, then all the palettes, then all the windows — not interleaved per building.
 
@@ -534,7 +535,7 @@ It is dark and there is no light variant: the game is played over a deep blue sk
 
 Two numbers in it are measured, not chosen:
 
-- **`SCRIM_ALPHA` = 0.75.** The HUD and controls bars are the scheme's darkest surface at this alpha over the playfield. At the 0.45 it used to be, white text over the sun — which is yellow and sits at y=0, directly behind the HUD — came out at 3.1:1. At 0.75 the worst ground in the game leaves 7.4:1 for `onSurface` and 4.9:1 for `onSurfaceVariant`.
+- **`SCRIM_ALPHA` = 0.75.** The HUD and controls bars are the scheme's darkest surface at this alpha over the playfield. At the 0.45 it used to be, white text over the sun — yellow, and at the time drawn at y=0, directly behind the HUD — came out at 3.1:1. The sun has since moved down to `SUN_Y` and no longer passes under the bar, but the figure below is measured against the worst ground in the game, not against the sun, so the alpha stands. At 0.75 the worst ground in the game leaves 7.4:1 for `onSurface` and 4.9:1 for `onSurfaceVariant`.
 - **The numeric field is opaque** (`surfaceContainerHigh`, `outline` border). It used to be white at 12 %, which left its real colour to whatever the playfield was showing underneath: an invalid value read at 1.2:1 over a white panda. Against a surface of its own, `error` reads at 5.9:1.
 
 ### Icons and the wind arrow

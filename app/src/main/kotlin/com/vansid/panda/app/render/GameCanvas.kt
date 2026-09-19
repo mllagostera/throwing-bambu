@@ -130,7 +130,7 @@ private fun DrawScope.drawSun(
         sheet.cellW,
         sheet.cellH,
         frame.scenario.sunX - sheet.cellW / 2,
-        0,
+        G.SUN_Y,
         sheet.cellW,
         sheet.cellH,
         view,

@@ -4,7 +4,7 @@ package com.vansid.panda.core
  * Contract constants (§2 of the specification).
  *
  * Changing anything here changes the outcome of matches already played and breaks
- * compatibility between devices: change `ESPEC_DESARROLLO.md` first.
+ * compatibility between devices: change `docs/DEVELOPMENT_SPEC.md` first.
  */
 object G {
     // Logical canvas
@@ -38,6 +38,18 @@ object G {
     const val BUILD_H_MAX = 130
     const val SUN_W = 20
     const val SUN_H = 20
+
+    /**
+     * Top edge of the sun, which used to be 0 — flush with the top of the canvas, and so
+     * directly behind the HUD bar. That bar is about 36 dp tall and the canvas maps 200
+     * logical pixels onto the screen height, which on a phone in landscape is roughly 20
+     * logical pixels: the whole 20-pixel disc sat under it.
+     *
+     * At 28 the disc spans 28..48, below the bar and still well inside `SKY_BAND`, where
+     * no roof can reach it. Physics, the animation and the renderer all read it, so the
+     * face that says "ouch" and the sprite that gets hit stay the same object.
+     */
+    const val SUN_Y = 28
 
     /** The game is always two-player; the protocol and the match loop assume it. */
     const val PLAYERS = 2
