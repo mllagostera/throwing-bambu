@@ -101,5 +101,8 @@ class MatchAnimator(
         sunX: Int,
         x: Float,
         y: Float,
-    ): Boolean = abs(x - sunX) <= G.SUN_W / 2 + G.CANE_R && y <= G.SUN_H + G.CANE_R
+    ): Boolean =
+        abs(x - sunX) <= G.SUN_W / 2 + G.CANE_R &&
+            y >= G.SUN_Y - G.CANE_R &&
+            y <= G.SUN_Y + G.SUN_H + G.CANE_R
 }

@@ -121,5 +121,10 @@ private fun hitsSun(
     y: Float,
 ): Boolean {
     val halfW = G.SUN_W / 2 + G.CANE_R
-    return abs(x - scenario.sunX) <= halfW && y <= G.SUN_H + G.CANE_R
+    // A band, not a half-plane. While the sun sat at y = 0 an upper bound was enough,
+    // because the loop skips everything above the canvas; away from the top edge the
+    // sky is open on both sides of it.
+    return abs(x - scenario.sunX) <= halfW &&
+        y >= G.SUN_Y - G.CANE_R &&
+        y <= G.SUN_Y + G.SUN_H + G.CANE_R
 }
