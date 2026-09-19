@@ -4,13 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vansid.panda.app.ui.bluetooth.BluetoothSession
 import com.vansid.panda.core.AiLevel
-import com.vansid.panda.core.AiOpponent
-import com.vansid.panda.core.AiShotSource
 import com.vansid.panda.core.HumanShotSource
 import com.vansid.panda.core.MatchEngine
-import com.vansid.panda.core.Rng
 import com.vansid.panda.core.Shot
-import com.vansid.panda.core.ShotSource
 import com.vansid.panda.core.net.MatchConfig
 import com.vansid.panda.core.net.RemoteMatch
 import com.vansid.panda.core.net.Transport
@@ -42,9 +38,9 @@ class GameViewModel : ViewModel() {
      * match seats two people and needs both entries; against the AI, or across a link,
      * only one seat is ours.
      *
-     * `humanPlayers` in the UI state is derived from this map rather than worked out
-     * separately. The two disagreeing is precisely how the second player's Throw button
-     * came to be enabled while nothing could receive what it sent.
+     * [MatchSeats] builds this and the engine's source list together and refuses to
+     * produce a seat the engine does not read, so `humanPlayers` cannot offer a Throw
+     * button for a seat nothing is listening on.
      */
     private var seats: Map<Int, HumanShotSource> = emptyMap()
     private val animator = MatchAnimator(_uiState, viewModelScope)
@@ -74,20 +70,11 @@ class GameViewModel : ViewModel() {
     ) {
         if (engine != null) return
 
-        val opponent: ShotSource =
-            if (aiLevel == null) {
-                HumanShotSource()
-            } else {
-                AiShotSource(AiOpponent(aiLevel, Rng(seed)))
-            }
-        seats =
-            buildMap {
-                put(0, human)
-                if (opponent is HumanShotSource) put(1, opponent)
-            }
-        _uiState.update { it.copy(humanPlayers = seats.keys) }
+        val seating = localSeats(human, aiLevel, seed)
+        seats = seating.humanSeats
+        _uiState.update { it.copy(humanPlayers = seating.humanPlayers) }
 
-        val created = MatchEngine(seed, width, listOf(human, opponent), roundsToWin)
+        val created = MatchEngine(seed, width, seating.sources, roundsToWin)
         engine = created
         job = viewModelScope.launch { created.events.collect { events.handle(it) } }
         viewModelScope.launch { created.run() }
