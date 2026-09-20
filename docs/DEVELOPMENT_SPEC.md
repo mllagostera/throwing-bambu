@@ -101,6 +101,8 @@ The logical height is **always 200**. The width varies; that changes how many bu
 
 The game screen is locked to **landscape** (`android:screenOrientation="sensorLandscape"`). In portrait the canvas does fit, but the resulting scale wastes half the screen and the controls do not fit below it.
 
+From API 36 that attribute is ignored on displays of `sw600dp` and wider, so the lock survives on a tablet only because the application declares `android:appCategory="game"`: games are exempt. The manifest carries it for that reason and not as a label. The other way out, `PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY`, is deliberately not used — API 37 removes it, and it removes nothing from the exemption.
+
 ---
 
 ## 4. Deterministic RNG (`core/Rng.kt`)

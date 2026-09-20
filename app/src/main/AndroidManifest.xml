@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        `appCategory` is not decoration. From API 36 Android ignores `screenOrientation`
+        on displays of sw600dp and wider — a tablet or an unfolded foldable would rotate
+        the game into a shape D-04 says its canvas cannot take. Games are exempt from
+        that, and this flag is how a game says so. API 37 removes the temporary opt-out
+        property that would have been the alternative; it does not remove this exemption.
+    -->
     <application
         android:allowBackup="true"
+        android:appCategory="game"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
