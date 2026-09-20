@@ -222,16 +222,16 @@ private fun SettingsScreen(
             Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
             Text(stringResource(R.string.settings_language), style = MaterialTheme.typography.titleMedium)
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                FilterChip(
-                    selected = current == AppLocale.SYSTEM,
-                    onClick = { onPick(AppLocale.SYSTEM) },
-                    label = { Text(stringResource(R.string.settings_language_system)) },
-                )
-            }
+            // On its own line, above the five languages, because it is a different kind of
+            // answer: follow the phone, or name a language. No Row around it — one child
+            // in a `fillMaxWidth` Row is stretched to the screen and then laid out from
+            // its start, which is how this chip ended up pinned to the left edge while
+            // everything else on the screen was centred.
+            FilterChip(
+                selected = current == AppLocale.SYSTEM,
+                onClick = { onPick(AppLocale.SYSTEM) },
+                label = { Text(stringResource(R.string.settings_language_system)) },
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (option in AppLocale.entries.filter { it != AppLocale.SYSTEM }) {
                     FilterChip(
