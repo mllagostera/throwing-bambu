@@ -529,6 +529,12 @@ The UI does **not** live in the logical canvas. It sits on top, in native dp.
 
 Navigation: `Menu → [One player | Two local | Bluetooth] → Match setup → Game → Result`, plus `Menu → Settings`.
 
+### Screens on a big display (`app/ui/BambuApp.kt`)
+
+Every screen that is not the playfield goes through `ScreenScaffold`, which **multiplies the density** by the screen's height against a phone's 400 dp, capped at 2 and snapped to quarters. Each screen keeps writing the dp it was designed in and grows as a whole — padding, text, icons and touch targets together — instead of carrying a scale factor on every value. A phone lands on exactly 1, so what shipped there is untouched.
+
+The playfield does not come through the scaffold: the logical canvas goes on scaling by its own integer against real pixels (§3), and the interface over it stays in native dp. Neither does anything read from `Configuration` — the pairing screen negotiates `width` from `screenWidthDp`, and a protocol value must not move because the menus were made more comfortable.
+
 ### Palette (`app/ui/theme/BambuTheme.kt`)
 
 The interface has its own `ColorScheme`, derived from the playfield's: **keep the EGA hue, cut the saturation to about a third, pick the lightness by role.** Surfaces take the sky's blue, `primary` the bamboo cane's green, `secondary` the lit windows' yellow, `tertiary` the first facade's cyan, `error` the light red at a little more saturation than the rule.

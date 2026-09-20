@@ -20,6 +20,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +33,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -48,6 +50,7 @@ import com.vansid.panda.app.ui.icon.BambuIcons
 import com.vansid.panda.app.ui.icon.ButtonIcon
 import com.vansid.panda.app.ui.theme.BambuTheme
 import com.vansid.panda.core.AiLevel
+import kotlin.math.round
 
 /** The level slot carries this when there is no AI: two people at the same device. */
 const val NO_LEVEL = "NONE"
@@ -157,6 +160,9 @@ private fun MenuScreen(
     // Landscape is the only orientation this game runs in (D-04), so the menu is laid
     // out for it: logo on one side, choices on the other. Stacked vertically, the last
     // button was pushed off the bottom of the screen.
+    //
+    // The sizes below are a phone's and stay a phone's. On a bigger screen they are not
+    // rewritten but redrawn, by the scale `ScreenScaffold` puts on the density.
     ScreenScaffold { wide ->
         val buttons: @Composable ColumnScope.() -> Unit = {
             MenuButton(stringResource(R.string.menu_one_player), onClick = onOnePlayer)
@@ -305,22 +311,71 @@ private fun MenuButton(
  * Centres a screen's content, keeps a margin, and scrolls if it still does not fit.
  *
  * The constraints are read *outside* the scroll on purpose: inside one, the available
- * height is infinite, so `maxWidth > maxHeight` would always be false and every screen
- * would lay itself out as if it were in portrait.
+ * height is infinite, so `maxWidth > maxHeight` would always be false, every screen would
+ * lay itself out as if it were in portrait, and the scale below would be measured against
+ * a screen that does not exist.
+ *
+ * ### Why the density is overridden here
+ *
+ * Written in fixed dp, every one of these screens is a phone screen wherever it runs: on
+ * a 10" tablet the menu's logo came out at a third of the width it has on a phone, and
+ * its buttons — the one thing that did follow the screen, being full-width halves —
+ * stretched into 600 dp letterboxes with one small word in the middle.
+ *
+ * The fix is one line rather than a `* scale` on every dp in the app: a bigger density
+ * means a bigger dp, so **everything inside grows together** — padding, text, icons,
+ * touch targets, the lot — and each screen keeps writing the sizes it already had. The
+ * proportions that were designed on a phone are the whole point; what changes is how much
+ * glass they are drawn on.
+ *
+ * Two things this deliberately does not touch. The playfield: [com.vansid.panda.app.ui.game.GameScreen]
+ * does not come through here, so the logical canvas keeps scaling by its own integer
+ * against real pixels (§3). And anything read from `Configuration` — the pairing screen
+ * takes the canvas width it negotiates from there — because a protocol value must not
+ * move when the interface is made more comfortable.
  */
 @Composable
 internal fun ScreenScaffold(content: @Composable (wide: Boolean) -> Unit) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val wide = maxWidth > maxHeight
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-            contentAlignment = Alignment.Center,
+        val density = LocalDensity.current
+        CompositionLocalProvider(
+            LocalDensity provides Density(density.density * screenScale(maxHeight), density.fontScale),
         ) {
-            content(wide)
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                content(wide)
+            }
         }
     }
+}
+
+/**
+ * How much bigger than a phone a screen this tall is.
+ *
+ * A phone held in landscape is around 400 dp tall and a 10" tablet is 800, so the ratio
+ * against the phone is the factor, capped at 2: past a tablet the next screen is a
+ * television, and an interface that kept growing would be reaching for a remote control
+ * it cannot see.
+ *
+ * Height, not width, and not `sw600dp`. The problem on a big screen is vertical — a
+ * handful of buttons sitting in the middle of it — and a resolution bucket would answer
+ * with a step where what is wanted is a proportion.
+ *
+ * Snapped to quarters so that every phone lands on exactly 1, the layout that shipped,
+ * rather than on 1.03; and so that two devices a few dp apart cannot render measurably
+ * different screens.
+ *
+ * The height arrives before the override above, in the screen's own dp. It has to: a
+ * scale measured through the density it is about to set would chase its own tail.
+ */
+private fun screenScale(height: Dp): Float {
+    val raw = (height / 400.dp).coerceIn(1f, 2f)
+    return round(raw * 4f) / 4f
 }
