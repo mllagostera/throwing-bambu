@@ -25,7 +25,7 @@ throwing-bambu/
 └── app/           Android. Compose, rendering, navigation, audio.
 ```
 
-- `minSdk = 24`, `targetSdk = 35`, `compileSdk = 35`
+- `minSdk = 24`, `targetSdk = 36`, `compileSdk = 36`. Play raises the floor for new apps every August; 36 is what a first upload needs now.
 - Kotlin 2.x, Compose BOM, `kotlinx.coroutines`
 - `transport` depends on `core`. `app` depends on both. `core` depends on nothing.
 - Version management through `gradle/libs.versions.toml`.
@@ -100,6 +100,8 @@ The scale cannot be derived from the height alone: with a scale taken from `scre
 The logical height is **always 200**. The width varies; that changes how many buildings fit (between 8 and 19, depending on the widths drawn), not the scale of anything. Horizontal leftovers → sky-coloured side bars, never stretching.
 
 The game screen is locked to **landscape** (`android:screenOrientation="sensorLandscape"`). In portrait the canvas does fit, but the resulting scale wastes half the screen and the controls do not fit below it.
+
+From API 36 that attribute is ignored on displays of `sw600dp` and wider, so the lock survives on a tablet only because the application declares `android:appCategory="game"`: games are exempt. The manifest carries it for that reason and not as a label. The other way out, `PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY`, is deliberately not used — API 37 removes it, and it removes nothing from the exemption.
 
 ---
 

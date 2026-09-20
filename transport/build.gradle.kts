@@ -5,11 +5,11 @@ plugins {
 
 android {
     namespace = "com.vansid.panda.transport"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 24
-        testOptions.targetSdk = 35
+        testOptions.targetSdk = 36
         consumerProguardFiles("consumer-rules.pro")
     }
 

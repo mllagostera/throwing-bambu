@@ -181,12 +181,12 @@ fun uploadKey(): UploadKey? {
 
 android {
     namespace = "com.vansid.panda.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.vansid.panda"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = appVersion.code
         versionName = appVersion.name
     }
