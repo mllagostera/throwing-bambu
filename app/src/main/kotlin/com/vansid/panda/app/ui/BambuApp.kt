@@ -41,10 +41,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.vansid.panda.app.R
+import com.vansid.panda.app.audio.rememberMusic
 import com.vansid.panda.app.render.rememberGameSprites
 import com.vansid.panda.app.settings.AppLocale
+import com.vansid.panda.app.settings.LocalAudioSettings
 import com.vansid.panda.app.settings.LocaleStore
 import com.vansid.panda.app.settings.WithAppLocale
+import com.vansid.panda.app.settings.WithAudioSettings
 import com.vansid.panda.app.ui.bluetooth.bluetoothDestinations
 import com.vansid.panda.app.ui.icon.BambuIcons
 import com.vansid.panda.app.ui.icon.ButtonIcon
@@ -69,17 +72,28 @@ fun BambuApp(navController: NavHostController = rememberNavController()) {
     val store = remember { LocaleStore(context) }
     var locale by remember { mutableStateOf(store.locale) }
 
-    WithAppLocale(locale) {
-        BambuTheme {
-            Surface(modifier = Modifier.fillMaxSize()) {
-                BambuNavHost(
-                    navController = navController,
-                    locale = locale,
-                    onLocalePicked = {
-                        locale = it
-                        store.locale = it
-                    },
-                )
+    WithAudioSettings {
+        // At the root, so the tune runs across the whole app rather than restarting at
+        // every navigation. It follows the lifecycle, not the composition (rememberMusic).
+        val music = rememberMusic()
+        val audio = LocalAudioSettings.current
+        // Reading the setting inside the composition is what makes the toggle immediate:
+        // flipping it recomposes here, and the assignment starts or stops the player on
+        // that frame rather than at the next launch.
+        music.enabled = audio.music
+
+        WithAppLocale(locale) {
+            BambuTheme {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    BambuNavHost(
+                        navController = navController,
+                        locale = locale,
+                        onLocalePicked = {
+                            locale = it
+                            store.locale = it
+                        },
+                    )
+                }
             }
         }
     }
@@ -248,11 +262,44 @@ private fun SettingsScreen(
                 }
             }
 
+            Text(stringResource(R.string.settings_audio), style = MaterialTheme.typography.titleMedium)
+            AudioChips()
+
             Button(onClick = onBack) {
                 ButtonIcon(BambuIcons.Back)
                 Text(stringResource(R.string.settings_back))
             }
         }
+    }
+}
+
+/**
+ * The two audio switches (T-51).
+ *
+ * Chips rather than `Switch` rows, to match the language above them: a settings screen
+ * that answers two questions in two different shapes makes the reader work out twice
+ * whether they have understood the control.
+ *
+ * Each carries its own state in its icon as well as in the chip's selection, because the
+ * selected/unselected difference alone is a tint — and a player deciding whether the
+ * music is off wants to read that, not compare two shades of green.
+ */
+@Composable
+private fun AudioChips() {
+    val audio = LocalAudioSettings.current
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(
+            selected = audio.music,
+            onClick = { audio.music = !audio.music },
+            label = { Text(stringResource(R.string.settings_music)) },
+            leadingIcon = { ButtonIcon(if (audio.music) BambuIcons.SoundOn else BambuIcons.SoundOff) },
+        )
+        FilterChip(
+            selected = audio.sound,
+            onClick = { audio.sound = !audio.sound },
+            label = { Text(stringResource(R.string.settings_effects)) },
+            leadingIcon = { ButtonIcon(if (audio.sound) BambuIcons.SoundOn else BambuIcons.SoundOff) },
+        )
     }
 }
 

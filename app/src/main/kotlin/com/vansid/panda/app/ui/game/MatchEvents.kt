@@ -1,5 +1,7 @@
 package com.vansid.panda.app.ui.game
 
+import com.vansid.panda.app.audio.Sfx
+import com.vansid.panda.app.audio.SoundBank
 import com.vansid.panda.app.render.PandaFrame
 import com.vansid.panda.app.render.TerrainBitmap
 import com.vansid.panda.core.MatchEvent
@@ -23,6 +25,15 @@ internal class MatchEvents(
     private val state: MutableStateFlow<GameUiState>,
     private val animator: MatchAnimator,
 ) {
+    /**
+     * Where the noises go, once there is a decoder to make them (T-50).
+     *
+     * Null until the screen attaches one, and null again in a test: a match runs and is
+     * scored exactly the same either way, because nothing here reads anything back from
+     * the bank.
+     */
+    var sounds: SoundBank? = null
+
     suspend fun handle(event: MatchEvent) {
         when (event) {
             is MatchEvent.RoundStart -> onRoundStart(event)
@@ -80,6 +91,9 @@ internal class MatchEvents(
                 pandaPoses = it.pandaPoses + (event.player to PandaFrame.throwing(event.player)),
             )
         }
+        // With the pose, not before it and not after the flight: the whoosh belongs to
+        // the arm coming down, and the cane is on screen from the first frame of it.
+        sounds?.play(Sfx.THROW)
         animator.flight(event)
         state.update {
             it.copy(
@@ -92,6 +106,10 @@ internal class MatchEvents(
         // the rest follow the TerrainChanged the engine sends straight after.
         val hit = event.result.outcome is Outcome.HitTerrain || event.result.outcome is Outcome.HitPanda
         if (hit) {
+            // On frame 0, so the bang and the first flash of the blast are the same
+            // moment. Waiting for the crater on frame 3 would put the sound 120 ms late,
+            // which is far enough to hear as a mistake.
+            sounds?.play(Sfx.BOOM)
             animator.boom(event.result.impactX, event.result.impactY, 0, BOOM_CRATER_FRAME - 1)
         }
     }
@@ -115,7 +133,18 @@ internal class MatchEvents(
             )
         }
 
-    private fun onMatchEnd(event: MatchEvent.MatchEnd) =
+    /**
+     * The match is over, and the sound says so from this device's point of view.
+     *
+     * Won or lost is not a property of the match, it is a property of who is watching.
+     * `humanPlayers` is the set of seats somebody here throws from, so a winner inside it
+     * is a win in this room: against the computer that is the one human seat, across a
+     * link it is ours, and in a hot-seat match it is both — which is why two people at
+     * one phone always hear the victory. Somebody at this device did win.
+     */
+    private fun onMatchEnd(event: MatchEvent.MatchEnd) {
+        val won = event.winner in state.value.humanPlayers
+        sounds?.play(if (won) Sfx.VICTORY else Sfx.DEFEAT)
         state.update {
             it.copy(
                 phase = GamePhase.MATCH_OVER,
@@ -123,4 +152,5 @@ internal class MatchEvents(
                 scores = event.scores.toList(),
             )
         }
+    }
 }

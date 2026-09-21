@@ -2,6 +2,7 @@ package com.vansid.panda.app.ui.game
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vansid.panda.app.audio.SoundBank
 import com.vansid.panda.app.ui.bluetooth.BluetoothSession
 import com.vansid.panda.core.AiLevel
 import com.vansid.panda.core.HumanShotSource
@@ -53,6 +54,20 @@ class GameViewModel : ViewModel() {
         get() = animator.speedMultiplier
         set(value) {
             animator.speedMultiplier = value
+        }
+
+    /**
+     * The sound bank, owned by the screen rather than by this.
+     *
+     * A `SoundPool` holds decoder threads and has to be released, and the composition is
+     * what knows when the screen is gone. This view model outlives a rotation on purpose
+     * (T-21), so owning the decoder here would keep it alive across one — and releasing
+     * it here would tie the match's lifetime to the speaker's.
+     */
+    internal var sounds: SoundBank?
+        get() = events.sounds
+        set(value) {
+            events.sounds = value
         }
 
     /**

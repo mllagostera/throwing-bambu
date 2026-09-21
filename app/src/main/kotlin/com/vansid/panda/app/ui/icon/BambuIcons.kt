@@ -63,7 +63,7 @@ object BambuIcons {
             lineTo(15f, 18f)
         }
 
-    /** Sound on. Not wired to anything yet: the audio setting arrives with M7. */
+    /** Sound on. Carried by the music and effects chips in settings (T-51). */
     val SoundOn: ImageVector =
         stroked("SoundOn") {
             speaker()
@@ -75,7 +75,7 @@ object BambuIcons {
             lineTo(19f, 18f)
         }
 
-    /** Sound off, the mute state of the same control. Also waiting on M7. */
+    /** Sound off, the mute state of the same control. */
     val SoundOff: ImageVector =
         stroked("SoundOff") {
             speaker()
