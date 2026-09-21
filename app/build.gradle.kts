@@ -7,36 +7,57 @@ plugins {
 }
 
 /**
- * The sprites are build output of `tools/gen_sprites.py` (see AGENTS.md), so they are
- * packaged straight from `art/sprites` instead of being copied into the repository. A
- * second copy would drift the moment somebody regenerates the art.
+ * The sprites, the sound effects and the theme are all build output — of
+ * `tools/gen_sprites.py`, `tools/gen_sfx.py` and `tools/gen_music.py` (see AGENTS.md) —
+ * so they are packaged straight from `art/` instead of being copied into the repository.
+ * A second copy would drift the moment somebody regenerates them.
  */
-abstract class SyncSpritesTask : DefaultTask() {
+abstract class SyncArtTask : DefaultTask() {
     @get:InputDirectory
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val spriteDir: DirectoryProperty
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val sfxDir: DirectoryProperty
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val musicDir: DirectoryProperty
 
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
 
     @TaskAction
     fun sync() {
-        val target = outputDir.get().asFile.resolve("sprites")
+        copy(spriteDir, "sprites", "png")
+        copy(sfxDir, "sfx", "wav")
+        copy(musicDir, "music", "wav")
+    }
+
+    private fun copy(
+        source: DirectoryProperty,
+        name: String,
+        extension: String,
+    ) {
+        val target = outputDir.get().asFile.resolve(name)
         target.deleteRecursively()
         target.mkdirs()
-        spriteDir
+        source
             .get()
             .asFile
             .listFiles()
-            ?.filter { it.isFile && it.extension == "png" }
+            ?.filter { it.isFile && it.extension == extension }
             ?.forEach { it.copyTo(target.resolve(it.name), overwrite = true) }
     }
 }
 
-val syncSprites =
-    tasks.register<SyncSpritesTask>("syncSprites") {
+val syncArt =
+    tasks.register<SyncArtTask>("syncArt") {
         spriteDir.set(rootProject.layout.projectDirectory.dir("art/sprites"))
-        outputDir.set(layout.buildDirectory.dir("generated/spriteAssets"))
+        sfxDir.set(rootProject.layout.projectDirectory.dir("art/sfx"))
+        musicDir.set(rootProject.layout.projectDirectory.dir("art/music"))
+        outputDir.set(layout.buildDirectory.dir("generated/artAssets"))
     }
 
 /**
@@ -261,6 +282,6 @@ dependencies {
  */
 androidComponents {
     onVariants { variant ->
-        variant.sources.assets?.addGeneratedSourceDirectory(syncSprites, SyncSpritesTask::outputDir)
+        variant.sources.assets?.addGeneratedSourceDirectory(syncArt, SyncArtTask::outputDir)
     }
 }

@@ -30,6 +30,9 @@
     <string name="settings_title">Paramètres</string>
     <string name="settings_language">Langue</string>
     <string name="settings_language_system">Langue du système</string>
+    <string name="settings_audio">Audio</string>
+    <string name="settings_music">Musique</string>
+    <string name="settings_effects">Effets</string>
     <string name="settings_back">Retour</string>
 
     <!-- Bluetooth permission gate (M6) -->

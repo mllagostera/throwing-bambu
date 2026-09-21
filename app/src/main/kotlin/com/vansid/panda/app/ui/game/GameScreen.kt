@@ -24,6 +24,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,9 +42,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vansid.panda.app.R
+import com.vansid.panda.app.audio.rememberSoundBank
 import com.vansid.panda.app.render.GameCanvas
 import com.vansid.panda.app.render.GameFrame
 import com.vansid.panda.app.render.rememberGameSprites
+import com.vansid.panda.app.settings.LocalAudioSettings
 import com.vansid.panda.app.ui.bluetooth.BluetoothSession
 import com.vansid.panda.app.ui.theme.playfieldScrim
 import com.vansid.panda.core.AiLevel
@@ -69,6 +72,7 @@ fun GameScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val density = LocalDensity.current
     val sprites = rememberGameSprites()
+    AttachSounds(viewModel)
 
     // The system bars are hidden (see MainActivity), so what is normally left here is a
     // display cutout, plus whatever a swipe brings back transiently. Belt and braces: on
@@ -140,6 +144,24 @@ fun GameScreen(
             insets = bottomInsets,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+    }
+}
+
+/**
+ * Lends this screen's sound bank to the view model, and takes it back on the way out.
+ *
+ * The bank belongs to the screen because a `SoundPool` has to be released and only the
+ * composition knows when the screen is gone. Handing the reference back on dispose is the
+ * point: the view model deliberately outlives a rotation (T-21) and the pool does not, so
+ * without this it would come out of one holding a decoder that had already been released.
+ */
+@Composable
+private fun AttachSounds(viewModel: GameViewModel) {
+    val sounds = rememberSoundBank()
+    sounds.enabled = LocalAudioSettings.current.sound
+    DisposableEffect(viewModel, sounds) {
+        viewModel.sounds = sounds
+        onDispose { viewModel.sounds = null }
     }
 }
 
