@@ -5,8 +5,8 @@ holds the task-level detail and the record of every decision; the
 [specification](DEVELOPMENT_SPEC.md) is the contract this is built against.
 
 **Today:** the game is playable against the computer and against a person on the same
-device, with the delivered sprites, in five languages. What is missing is playing against
-someone on *another* device.
+device, with the delivered sprites, in five languages, with sound. What is missing is
+playing against someone on *another* device.
 
 ---
 
@@ -19,7 +19,7 @@ Download the `apk-debug` artifact from the latest green CI run and install it.
 | **One player** | Three difficulties. On Hard the AI hits within three turns in 87 % of generated scenarios. |
 | **Two players, same device** | Hot-seat, best of five. |
 | **Play over Bluetooth** | Built end to end, but unproven: no two devices have run it. |
-| **Settings** | Language: English, Español, Català, Français, Deutsch, or the system's. |
+| **Settings** | Language: English, Español, Català, Français, Deutsch, or the system's. Music and sound effects, switched off separately. |
 
 A match is a destructible skyline, wind that changes every turn, and a bamboo cane with
 real ballistics. Same seed, same shots, same match — on any device.
@@ -36,9 +36,9 @@ real ballistics. Same seed, same shots, same match — on any device.
 | **M3** Computer opponent | Coarse search, refinement, per-level noise | Harness over 200 scenarios: 41 % / 73 % / **87 %** hit rate by level |
 | **M4** Sprites | Panda, cane, explosion, sun, skyline, logo, all at integer scale | Art packaged from `art/` at build time; a test ties the engine palette to the delivered PNGs |
 | **M5** Protocol | Binary codec, transport abstraction, loopback, networked match | Test §15.12: a full match across a link, identical scores, zero divergences |
-| *(brought forward)* | Five languages and a settings screen | 29 strings in resources, placeholders verified across all four translations |
+| *(brought forward)* | Five languages and a settings screen | 55 translatable strings, placeholders verified across all four translations; two are `translatable="false"` on purpose |
 
-**74 tests**, all run on every push, and `:core` runs them twice — on Linux and on macOS —
+**121 tests**, all run on every push, and `:core`'s 104 run twice — on Linux and on macOS —
 because determinism cannot be verified on a single JVM.
 
 ---
@@ -71,8 +71,12 @@ in the middle, with zero divergences.
 - `RfcommTransport`, so the game works on a device without Google Play Services. This is
   committed scope, not a nice-to-have: without it the app simply does not run on those
   devices.
-- Audio: throw, explosion, victory, defeat.
-- Persistent settings beyond the language: speed multiplier, sound, default difficulty.
+- ~~Audio: throw, explosion, victory, defeat.~~ Done, plus a looping background
+  theme that was not in the plan, and separate switches for both. All of it
+  synthesised by `tools/gen_sfx.py` and `tools/gen_music.py` — nothing recorded,
+  nothing downloaded.
+- Persistent settings beyond the language: speed multiplier and default difficulty.
+  Sound and music are done — two separate switches, remembered across launches.
 - Release build: R8, signing, a signed APK from CI.
 - Polish: transitions, empty states, accessibility of the numeric controls.
 

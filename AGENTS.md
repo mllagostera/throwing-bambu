@@ -73,6 +73,36 @@ regeneration changes a file you did not mean to touch, you changed something —
 `art_skyline.py`'s LCG seed is the usual culprit. Find it rather than committing
 the churn.
 
+## The sound pipeline
+
+The WAVs under `art/sfx/` and `art/music/` are build output too, on exactly the
+same terms:
+
+```bash
+python3 tools/gen_sfx.py                 # rewrites art/sfx   — four effects
+python3 tools/gen_music.py               # rewrites art/music — the looping theme
+```
+
+Neither needs a dependency at all. `tools/audio.py` holds the synthesis
+primitives they share — it is to the audio what `ega.py` is to the sprites — and
+the standard library writes the WAV container. Do not reach for numpy to shorten
+them; Pillow remains the only dependency this repository has.
+
+Synthesised, never recorded or downloaded: §18 forbids reusing the original's
+assets and the store listing promises original work throughout. The theme is a
+tune written for this game over a progression nobody owns. If it is ever
+replaced, it has to be replaced by something equally ours — a loop lifted from
+anywhere, however obscure, breaks a promise already published.
+
+Determinism works the way the art's does, from the same fixed-seed LCG. Within
+`gen_sfx.py` one generator is threaded through all four effects, so changing an
+earlier sound changes the later ones — the same bargain the sprite sheets make.
+
+`syncArt` in `app/build.gradle.kts` carries all three directories into the APK,
+so nothing is ever copied into `app/src/main/assets`. The audio is stored
+uncompressed there on purpose: `AssetManager.openFd` fails on a compressed
+asset, and both the sound bank and the music player need a file descriptor.
+
 ## Hard rules
 
 `tools/verify_assets.py` enforces all of these against the delivered PNGs. Do not
