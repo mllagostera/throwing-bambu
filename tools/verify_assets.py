@@ -52,6 +52,14 @@ INVENTORY = {
     "icon.png":    (24, 24, None, None, 1),
 }
 
+# Skyline geometry, in the band's own rows. The engine rests the band's bottom
+# edge on y=160 of the 200 px canvas, so row y here is y+80 on screen.
+SKYLINE_ANTENNA_TOP = 4   # nothing at all above this row
+SKYLINE_MASS_TOP = 12     # no roof above this row; only antennas in between
+SKYLINE_MAX_ROOF = 50     # every roof above this row: a lower one shows over
+                          # almost nothing, since a column is visible only
+                          # where the building in front is shorter than 120-y
+
 failures = []
 warnings = []
 
@@ -251,19 +259,36 @@ def check_skyline():
         crop = tops[:width]
         if max(crop) - min(crop) < 8:
             fail(f"skyline: cropped to {width} px the silhouette goes flat")
-    above60 = sum(1 for y in range(60) for x in range(img.width) if px[x, y][3])
-    pct = 100.0 * above60 / (60 * img.width)
-    if pct > 3.0:
-        fail(f"skyline: {pct:.1f} % of the top 60 px is occupied; "
-             f"they must stay reasonably clear")
+    # The band's bottom edge rests on y=160 of the 200 px canvas (the roofline
+    # of the shortest playable building), so row y of this image is y+80 on
+    # screen. What has to stay clear is the sky above the city, not a fixed
+    # fraction of the file: the mass stops at y=12 (y=92 on screen) and only
+    # 1 px antennas rise above it, never past y=4 (y=84). The sun lives at
+    # y=28..48, well clear of both.
+    clear = [(x, y) for y in range(SKYLINE_ANTENNA_TOP)
+             for x in range(img.width) if px[x, y][3]]
+    if clear:
+        fail(f"skyline: {len(clear)} px above y={SKYLINE_ANTENNA_TOP}; "
+             f"the sun and the high arcs own that sky")
+    band = range(SKYLINE_ANTENNA_TOP, SKYLINE_MASS_TOP)
+    above = sum(1 for y in band for x in range(img.width) if px[x, y][3])
+    pct = 100.0 * above / (len(band) * img.width)
+    if pct > 2.0:
+        fail(f"skyline: {pct:.1f} % of y={SKYLINE_ANTENNA_TOP}..{SKYLINE_MASS_TOP - 1} "
+             f"is occupied; only antennas belong above the mass")
     flat = longest = 1
     for i in range(1, len(tops)):
         flat = flat + 1 if tops[i] == tops[i - 1] else 1
         longest = max(longest, flat)
     if longest > 30:
         warn(f"skyline: a {longest} px flat plateau; it reads as a single block")
+    # Antenna columns start above the mass, so they are not roofs.
+    roofs = [t for t in tops if t >= SKYLINE_MASS_TOP]
+    if max(roofs) > SKYLINE_MAX_ROOF:
+        fail(f"skyline: a roof at y={max(roofs)}; below y={SKYLINE_MAX_ROOF} the band "
+             f"only clears the shortest playable buildings and reads as blocks")
     print(f"  skyline: profile {min(tops)}-{max(tops)}, "
-          f"{pct:.1f} % above y=60, longest plateau {longest} px")
+          f"{pct:.1f} % of the antenna band, longest plateau {longest} px")
 
 
 def check_logo():

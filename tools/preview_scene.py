@@ -29,7 +29,10 @@ WIDTH, HEIGHT = 400, 200
 GROUND = HEIGHT
 # The skyline band is anchored above the base of the buildings, not at the
 # bottom edge of the screen: flush with the bottom it is completely hidden.
-SKYLINE_BASE = HEIGHT - 45
+# The engine uses G.BUILD_H_MIN, the roofline of the shortest building it can
+# generate, so that the band never floats over a strip of bare sky.
+BUILD_H_MIN = 40
+SKYLINE_BASE = HEIGHT - BUILD_H_MIN
 
 
 def _hex(s):
@@ -62,8 +65,11 @@ def _sky(img):
 def _buildings(img, swatches):
     """Generate buildings the way the engine would: from the four key pixels only."""
     px = img.load()
+    # Heights span the generator's whole range, BUILD_H_MIN included: the
+    # shortest building is the one that exposes a badly anchored skyline, and
+    # a scene without one hides the bug instead of showing it.
     widths = [58, 71, 52, 66, 60, 55, 48]
-    heights = [96, 62, 128, 74, 110, 58, 88]
+    heights = [96, 62, 128, 40, 110, 46, 88]
     roofs = []
     x = 0
     for n, (w, h) in enumerate(zip(widths, heights)):

@@ -18,8 +18,16 @@ import com.vansid.panda.core.logicalScale
 /** Trail length behind the cane, in trajectory points (§13). */
 private const val TRAIL_POINTS = 12
 
-/** The skyline band sits 45 px above the base of the buildings (`art/README.md`). */
-private const val SKYLINE_BOTTOM_OFFSET = 45
+/**
+ * The bottom edge of the skyline band rests on the roofline of the shortest building the
+ * generator can produce (`art/README.md`).
+ *
+ * Flush with the bottom of the canvas the band is buried by the playable buildings, so it
+ * has to be lifted; lifted any further than this it floats, because a `BUILD_H_MIN`
+ * building leaves a strip of bare sky between the base of the background and its own
+ * roof. Tying the offset to the constant rather than to a number keeps the two in step.
+ */
+internal const val SKYLINE_BOTTOM_OFFSET = G.BUILD_H_MIN
 
 /**
  * Everything the canvas needs for one frame. Grouped into one object because a draw has

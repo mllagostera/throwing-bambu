@@ -11,6 +11,27 @@ windows on the playable facades, and repeating it here erases the difference
 between what is in front and what is behind. In light blue the band stays where
 it belongs, at the back.
 
+Where the band lands, and why the buildings are this tall
+---------------------------------------------------------
+The engine rests the bottom edge of the band on y = G.H - G.BUILD_H_MIN = 160 of
+the 200 px canvas: the roofline of the *shortest* playable building it can
+generate. That anchor is not decorative, it is what keeps the band from floating.
+Any higher and a 40 px building leaves a strip of bare sky between the base of
+the background and its own roof, which reads as the sky being painted on top of
+the city.
+
+With the base pinned at 160, whatever is to be seen has to be drawn upwards:
+a column of the band is only visible where the playable building in front of it
+is shorter than 40 + that column's own height. The first delivery was 11-23 px
+tall and sat on a 45 px anchor, so it cleared only buildings below 68 px -- under
+a third of the generated range, 40-130 -- and where it did clear one it showed a
+stump 23 px tall at best. At 30-68 px the band clears buildings up to 108 px,
+most of the range, and reads as a city rather than as blocks.
+
+The ceiling is the other constraint: the mass stops at y=12 of the band
+(y=92 on screen) and the antennas at y=4 (y=84), which leaves the sun (y=28-48)
+and the high arcs of the trajectories a clear band of sky above.
+
 The layout comes from a fixed-seed LCG, so the PNG is reproducible bit for bit
 from this file.
 """
@@ -21,8 +42,10 @@ WIDTH, HEIGHT = 460, 80
 SILHOUETTE, WINDOW = 1, 9
 
 BASE_Y = HEIGHT - 1                  # the band rests on the bottom edge
-MIN_HEIGHT, MAX_HEIGHT = 11, 23      # leaves the top 57 px clear
+MIN_HEIGHT, MAX_HEIGHT = 30, 68      # tall enough to clear the playable roofs
 MIN_WIDTH, MAX_WIDTH = 7, 24
+MASS_TOP = HEIGHT - MAX_HEIGHT       # 12: no roof above this row
+ANTENNA_TOP = 4                      # only antennas between here and MASS_TOP
 SEED = 0x60411A5                     # arbitrary, but fixed on purpose
 
 
@@ -59,11 +82,12 @@ def build() -> Canvas:
         top = BASE_Y - h + 1
         c.fill_rect(x, top, min(x + w - 1, WIDTH - 1), BASE_Y, SILHOUETTE)
 
-        # One antenna every few buildings. 1 px wide and never above y=48, so it
-        # does not intrude on the high arc of the trajectories.
+        # One antenna every few buildings. 1 px wide and never above y=4 of the
+        # band -- y=84 on screen -- so it does not intrude on the high arc of
+        # the trajectories.
         if n % 5 == 3:
             ax = x + w // 2
-            atop = max(48, top - rnd.between(4, 9))
+            atop = max(ANTENNA_TOP, top - rnd.between(4, 9))
             c.fill_rect(ax, atop, ax, top, SILHOUETTE)
 
         # Windows: a 1 px dot on a 3 px grid, lit sparsely.

@@ -155,9 +155,13 @@ circle past 46 %, which reads as a mistake rather than as an icon; one filtered
 downscale from hdpi keeps the proportions instead.
 
 `skyline.png` is 460 px wide and gets cropped from the right to the real canvas
-width. In the test scene the band is anchored 45 px above the base of the
-buildings; flush with the bottom edge of the screen it is completely hidden by
-the playable buildings.
+width. The band's bottom edge rests on `G.BUILD_H_MIN` — 40 px above the base of
+the buildings, the roofline of the shortest one the generator can produce — in
+the engine and in the test scene alike. Flush with the bottom edge of the screen
+it is completely hidden by the playable buildings; any higher and it floats, with
+a strip of bare sky under the background city wherever a 40 px building stands.
+That is the whole of the anchor, and `SkylineAnchorTest` holds the two numbers
+together.
 
 ## Decisions that depart from the brief
 
@@ -197,6 +201,21 @@ corresponding `art_*.py`.
    colour of the lit windows on the playable facades; repeating it in the
    background erases the difference between what is in front and what is behind.
 10. **`logo.png` was made despite the block in section 9.** See below.
+11. **The skyline's buildings are 30-68 px tall, not the 11-23 px of the first
+    delivery, and the band is anchored at 40 px rather than 45.** The two go
+    together and both were found by playing rather than by looking at the piece
+    on its own. With the band lifted 45 px, any scenario containing a 40 px
+    building — the generator's own minimum — showed 5 px of sky underneath the
+    background city, which reads as the sky being painted over the skyline. And
+    once the base is pinned at the lowest roofline, a column of the band is only
+    visible where the playable building in front of it is shorter than 40 plus
+    that column's own height. At 11-23 px on a 45 px anchor that was buildings
+    under 68 px, under a third of the 40-130 range, and what cleared them was a
+    stump 23 px tall at best — which is why the background so often was not
+    there at all. At 30-68 px the band clears buildings up to 108 px and reads
+    as a distant city. The ceiling did not move for this: the mass
+    stops at y=92 on screen and the antennas at y=84, both below `SKY_BAND`, so
+    the sun at y=28-48 and the high arcs keep the sky they had.
 
 ## Pending decisions
 

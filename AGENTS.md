@@ -123,9 +123,14 @@ weaken a check to make a change pass; fix the art.
    must grow monotonically.
 7. **Facade base colours.** Never green (the bamboo cane would vanish in front of
    it) and never white (the panda would). All five bases must differ.
-8. **Skyline.** No empty columns, the top 60 px must stay reasonably clear, and
-   the silhouette must still read cropped from the right at any width from 320 to
-   460 px. No centred composition, no memorable landmark.
+8. **Skyline.** No empty columns, and the silhouette must still read cropped from
+   the right at any width from 320 to 460 px. No centred composition, no
+   memorable landmark. Its 80 rows are not the top of the screen: the engine
+   rests the band's bottom edge on the lowest possible roofline, so row y of the
+   file is y+80 on the 200 px canvas. What has to stay clear is the sky above the
+   city — no roof above y=12 of the band and no antenna above y=4 — and what has
+   to stay tall is the city itself, because a column is only seen where the
+   playable building in front of it is shorter than 120 minus that column's roof.
 
 ## Before calling art work done
 
