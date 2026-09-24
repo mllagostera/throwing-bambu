@@ -110,7 +110,6 @@ private fun BambuNavHost(
             MenuScreen(
                 onOnePlayer = { navController.navigate(Routes.setup(solo = true)) },
                 onTwoPlayers = { navController.navigate(Routes.setup(solo = false)) },
-                onBluetooth = { navController.navigate(Routes.BLUETOOTH) },
                 onSettings = { navController.navigate(Routes.SETTINGS) },
             )
         }
@@ -168,7 +167,6 @@ object Routes {
 private fun MenuScreen(
     onOnePlayer: () -> Unit,
     onTwoPlayers: () -> Unit,
-    onBluetooth: () -> Unit,
     onSettings: () -> Unit,
 ) {
     // Landscape is the only orientation this game runs in (D-04), so the menu is laid
@@ -181,11 +179,9 @@ private fun MenuScreen(
         val buttons: @Composable ColumnScope.() -> Unit = {
             MenuButton(stringResource(R.string.menu_one_player), onClick = onOnePlayer)
             MenuButton(stringResource(R.string.menu_two_players), onClick = onTwoPlayers)
-            MenuButton(
-                label = stringResource(R.string.menu_bluetooth),
-                icon = BambuIcons.Bluetooth,
-                onClick = onBluetooth,
-            )
+            // The Bluetooth entry is withdrawn until the mode works on real devices (T-47).
+            // Its destinations stay registered, so restoring it is this button and its
+            // callback, nothing more.
             OutlinedButton(onClick = onSettings, modifier = Modifier.fillMaxWidth()) {
                 ButtonIcon(BambuIcons.Settings)
                 Text(stringResource(R.string.menu_settings))
