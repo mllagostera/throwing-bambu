@@ -346,6 +346,8 @@ The truncation test is exhaustive rather than representative — **every prefix 
 | ✅ T-46 | Reconnection: `RESUME` + `HISTORY` (D-10), deterministic state rebuild, resume on the right turn | 0.8 d |
 | T-47 | Testing on two physical devices, including the 10 s link drop from the acceptance criterion | 0.5 d |
 
+**Withdrawn from the menu in 0.1.1.** The mode failed on real devices, so the hotfix removes only its menu entry: the screens, the transport and the `bluetooth` route are untouched and still build. It returns to the menu once T-47 passes.
+
 **DoD:** a full match between two physical devices, with a 10 s disconnection in the middle and correct resumption, `divergences == 0`. Denying each permission produces a specific message, never a silent `catch`.
 
 ---
