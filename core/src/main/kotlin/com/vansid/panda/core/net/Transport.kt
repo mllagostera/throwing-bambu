@@ -63,7 +63,10 @@ class LoopbackTransport private constructor(
     override val incoming: Flow<Msg> =
         inbound.receiveAsFlow().mapNotNull { frame ->
             when (val decoded = Codec.decode(frame)) {
-                is Decoded.Ok -> decoded.msg
+                is Decoded.Ok -> {
+                    decoded.msg
+                }
+
                 // A real link drops what it cannot parse; the reason is kept for tests.
                 is Decoded.Rejected -> {
                     rejected += decoded.reason

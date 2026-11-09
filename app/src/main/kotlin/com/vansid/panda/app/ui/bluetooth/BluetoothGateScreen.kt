@@ -76,7 +76,7 @@ fun BluetoothGateScreen(
         action = actionFor(readiness),
         onAction = {
             when (val state = readiness) {
-                is BluetoothReadiness.NeedsPermission ->
+                is BluetoothReadiness.NeedsPermission -> {
                     // The first press opens Android's dialog; once it has been refused,
                     // that dialog will not appear again, so the only honest next step is
                     // the app's settings page.
@@ -86,10 +86,19 @@ fun BluetoothGateScreen(
                         asked = true
                         request.launch(state.permissions.toTypedArray())
                     }
+                }
 
-                BluetoothReadiness.BluetoothOff -> context.open(Settings.ACTION_BLUETOOTH_SETTINGS)
-                BluetoothReadiness.LocationOff -> context.open(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                BluetoothReadiness.Ready -> onReady()
+                BluetoothReadiness.BluetoothOff -> {
+                    context.open(Settings.ACTION_BLUETOOTH_SETTINGS)
+                }
+
+                BluetoothReadiness.LocationOff -> {
+                    context.open(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                }
+
+                BluetoothReadiness.Ready -> {
+                    onReady()
+                }
             }
         },
         onBack = onBack,
@@ -104,12 +113,21 @@ private fun bodyFor(
     stringResource(
         when (readiness) {
             // Before asking, explain. After a refusal, say what it cost and where to undo it.
-            is BluetoothReadiness.NeedsPermission ->
+            is BluetoothReadiness.NeedsPermission -> {
                 if (asked) R.string.bt_denied_body else R.string.bt_explain_body
+            }
 
-            BluetoothReadiness.BluetoothOff -> R.string.bt_off_body
-            BluetoothReadiness.LocationOff -> R.string.bt_location_off_body
-            BluetoothReadiness.Ready -> R.string.bt_ready_body
+            BluetoothReadiness.BluetoothOff -> {
+                R.string.bt_off_body
+            }
+
+            BluetoothReadiness.LocationOff -> {
+                R.string.bt_location_off_body
+            }
+
+            BluetoothReadiness.Ready -> {
+                R.string.bt_ready_body
+            }
         },
     )
 

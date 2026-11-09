@@ -54,19 +54,32 @@ class LinkWatchdog(
 
     fun tick(nowMs: Long): LinkAction? =
         when {
-            lost -> null
-            nowMs - turnStartedMs >= turnTimeoutMs -> LinkAction.TurnTimedOut
-            nowMs - lastHeardMs < pingIntervalMs -> null
+            lost -> {
+                null
+            }
+
+            nowMs - turnStartedMs >= turnTimeoutMs -> {
+                LinkAction.TurnTimedOut
+            }
+
+            nowMs - lastHeardMs < pingIntervalMs -> {
+                null
+            }
+
             missedPings >= maxMissedPings -> {
                 lost = true
                 LinkAction.DeclareLost
             }
+
             nowMs - lastPingMs >= pingIntervalMs -> {
                 lastPingMs = nowMs
                 missedPings++
                 LinkAction.SendPing
             }
-            else -> null
+
+            else -> {
+                null
+            }
         }
 
     /** Seconds left before the current turn is abandoned; the UI counts down from 75 s. */

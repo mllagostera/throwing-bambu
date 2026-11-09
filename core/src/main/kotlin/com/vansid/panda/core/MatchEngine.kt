@@ -156,7 +156,9 @@ class MatchEngine(
                 outcome.player
             }
 
-            Outcome.OffScreen, Outcome.TimeOut -> null
+            Outcome.OffScreen, Outcome.TimeOut -> {
+                null
+            }
         }
 
     private suspend fun crater(

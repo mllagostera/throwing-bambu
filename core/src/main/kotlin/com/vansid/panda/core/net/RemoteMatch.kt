@@ -119,16 +119,29 @@ class RemoteMatch(
                     remote.deliver(msg.toShot())
                 }
 
-                is Msg.Result -> verify(msg)
-                is Msg.Bye -> closedBy = msg.reason
+                is Msg.Result -> {
+                    verify(msg)
+                }
+
+                is Msg.Bye -> {
+                    closedBy = msg.reason
+                }
 
                 // A peer that reconnected asks where the match stands; the answer is the
                 // shot history, from which it rebuilds everything else itself.
-                is Msg.Resume -> answerResume(msg)
+                is Msg.Resume -> {
+                    answerResume(msg)
+                }
 
-                is Msg.History -> adoptHistory(msg.shots)
-                is Msg.Ping -> transport.send(Msg.Ping(msg.nonce))
-                else -> Unit
+                is Msg.History -> {
+                    adoptHistory(msg.shots)
+                }
+
+                is Msg.Ping -> {
+                    transport.send(Msg.Ping(msg.nonce))
+                }
+
+                else -> {}
             }
         }
     }

@@ -75,7 +75,10 @@ class NearbyTransport(
     override val incoming: Flow<Msg> =
         frames.receiveAsFlow().mapNotNull { frame ->
             when (val decoded = Codec.decode(frame)) {
-                is Decoded.Ok -> decoded.msg
+                is Decoded.Ok -> {
+                    decoded.msg
+                }
+
                 is Decoded.Rejected -> {
                     rejected += decoded.reason
                     null
