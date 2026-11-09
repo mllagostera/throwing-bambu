@@ -75,9 +75,13 @@ fun WithAppLocale(
     }
 
     val context = LocalContext.current
+    // Read through the composition, not from `context.resources`: keyed on it, the override
+    // is rebuilt when the configuration changes in place — rotation, night mode, font
+    // scale — instead of pinning the values it had when it was first composed.
+    val base = LocalConfiguration.current
     val localized =
-        remember(locale, context) {
-            val configuration = Configuration(context.resources.configuration)
+        remember(locale, context, base) {
+            val configuration = Configuration(base)
             configuration.setLocale(Locale.forLanguageTag(locale.tag))
             context.createConfigurationContext(configuration)
         }
