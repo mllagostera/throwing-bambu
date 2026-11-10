@@ -189,15 +189,30 @@ class ResumeTest {
 
     private fun describe(event: MatchEvent): String =
         when (event) {
-            is MatchEvent.RoundStart ->
+            is MatchEvent.RoundStart -> {
                 "RoundStart(${event.round},${event.scenario.terrain.fingerprint()},${event.wind})"
-            is MatchEvent.TurnStart -> "TurnStart(${event.player},${event.wind},${event.turn})"
-            is MatchEvent.ShotFired ->
+            }
+
+            is MatchEvent.TurnStart -> {
+                "TurnStart(${event.player},${event.wind},${event.turn})"
+            }
+
+            is MatchEvent.ShotFired -> {
                 "ShotFired(${event.player},${event.shot.angle},${event.shot.power}," +
                     "${event.result.outcome},${event.result.steps})"
-            is MatchEvent.TerrainChanged -> "TerrainChanged(${event.cx},${event.cy},${event.r})"
-            is MatchEvent.RoundEnd -> "RoundEnd(${event.winner},${event.scores.toList()})"
-            is MatchEvent.MatchEnd -> "MatchEnd(${event.winner},${event.scores.toList()})"
+            }
+
+            is MatchEvent.TerrainChanged -> {
+                "TerrainChanged(${event.cx},${event.cy},${event.r})"
+            }
+
+            is MatchEvent.RoundEnd -> {
+                "RoundEnd(${event.winner},${event.scores.toList()})"
+            }
+
+            is MatchEvent.MatchEnd -> {
+                "MatchEnd(${event.winner},${event.scores.toList()})"
+            }
         }
 
     private companion object {

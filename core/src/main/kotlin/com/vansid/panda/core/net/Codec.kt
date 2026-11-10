@@ -43,7 +43,9 @@ object Codec {
         val out = Writer()
         out.u8(PROTOCOL_VERSION.toInt())
         when (msg) {
-            is Msg.Hello -> encodeHello(out, msg)
+            is Msg.Hello -> {
+                encodeHello(out, msg)
+            }
 
             is Msg.MatchStart -> {
                 out.u8(TYPE_MATCH_START)
@@ -70,7 +72,9 @@ object Codec {
                 out.u16(msg.impactY.coerceIn(0, U16_MAX))
             }
 
-            is Msg.Rematch -> out.u8(TYPE_REMATCH)
+            is Msg.Rematch -> {
+                out.u8(TYPE_REMATCH)
+            }
 
             is Msg.Bye -> {
                 out.u8(TYPE_BYE)
@@ -88,7 +92,9 @@ object Codec {
                 out.u16(msg.nextTurn)
             }
 
-            is Msg.History -> encodeHistory(out, msg)
+            is Msg.History -> {
+                encodeHistory(out, msg)
+            }
         }
         return out.toByteArray()
     }
@@ -157,30 +163,45 @@ object Codec {
         r: Reader,
     ): Msg? =
         when (type) {
-            TYPE_HELLO -> decodeHello(r)
+            TYPE_HELLO -> {
+                decodeHello(r)
+            }
 
-            TYPE_MATCH_START ->
+            TYPE_MATCH_START -> {
                 if (!r.has(MATCH_START_BYTES)) null else Msg.MatchStart(r.i64(), r.u16(), r.u8(), r.u8())
+            }
 
-            TYPE_SHOT ->
+            TYPE_SHOT -> {
                 if (!r.has(SHOT_BYTES)) null else Msg.ShotMsg(r.u16(), r.u8(), r.u8())
+            }
 
-            TYPE_RESULT -> decodeResult(r)
+            TYPE_RESULT -> {
+                decodeResult(r)
+            }
 
-            TYPE_REMATCH -> Msg.Rematch
+            TYPE_REMATCH -> {
+                Msg.Rematch
+            }
 
-            TYPE_BYE ->
+            TYPE_BYE -> {
                 if (!r.has(BYE_BYTES)) null else Msg.Bye(ByeReason.fromCode(r.u8()))
+            }
 
-            TYPE_PING ->
+            TYPE_PING -> {
                 if (!r.has(PING_BYTES)) null else Msg.Ping(r.i64())
+            }
 
-            TYPE_RESUME ->
+            TYPE_RESUME -> {
                 if (!r.has(RESUME_BYTES)) null else Msg.Resume(r.i64(), r.u16())
+            }
 
-            TYPE_HISTORY -> decodeHistory(r)
+            TYPE_HISTORY -> {
+                decodeHistory(r)
+            }
 
-            else -> null
+            else -> {
+                null
+            }
         }
 
     private fun decodeHello(r: Reader): Msg? {

@@ -86,7 +86,9 @@ class AiEvaluationTest {
             when (val outcome = result.outcome) {
                 // An own goal ends the round just as a hit does, but in the wrong direction.
                 is Outcome.HitPanda -> return (turn + 1).takeIf { outcome.player == 1 }
+
                 is Outcome.HitTerrain -> scenario.terrain.blast(outcome.x, outcome.y, G.CRATER_R)
+
                 else -> Unit
             }
         }

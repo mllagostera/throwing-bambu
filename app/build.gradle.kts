@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -135,7 +134,7 @@ fun appVersion(): AppVersion {
 
 val appVersion = appVersion()
 
-/**
+/*
  * What CI reads instead of grepping this file for a literal. The shape is `key=value` per
  * line so the workflow can append it straight to `$GITHUB_OUTPUT`.
  */
@@ -202,7 +201,7 @@ fun uploadKey(): UploadKey? {
 
 android {
     namespace = "com.vansid.panda.app"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.vansid.panda"
@@ -274,7 +273,7 @@ dependencies {
     testImplementation(libs.junit)
 }
 
-/**
+/*
  * Registering the directory through the variant API — rather than adding it to
  * `sourceSets` and wiring task dependencies by name — is what makes every consumer pick
  * it up: merging, packaging and lint alike. Wiring it by hand missed lint, and Gradle

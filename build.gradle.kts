@@ -5,11 +5,15 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.kotlin.jvm) apply false
-    alias(libs.plugins.kotlin.android) apply false
+    // No kotlin-android: since AGP 9 the Android plugins compile Kotlin themselves.
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.detekt) apply false
 }
+
+// Read here, not inside `subprojects`: there the receiver is the subproject, which has no
+// `libs` extension of its own.
+val ktlintEngine = libs.versions.ktlintEngine
 
 // The root project has no Kotlin code; applying ktlint or detekt to it only causes trouble.
 subprojects {
@@ -19,7 +23,7 @@ subprojects {
     apply(plugin = "io.gitlab.arturbosch.detekt")
 
     extensions.configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-        version.set("1.5.0")
+        version.set(ktlintEngine)
         filter { exclude("**/build/**") }
     }
 

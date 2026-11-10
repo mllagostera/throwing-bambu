@@ -84,19 +84,28 @@ suspend fun guestHandshake(
     val theirs = awaitHello(transport, timeoutMs)
     val start = theirs?.let { await<Msg.MatchStart>(transport, timeoutMs) }
     return when {
-        theirs == null -> Handshake.Failed("no HELLO from the peer")
-        start == null -> Handshake.Failed("no MATCH_START from the host")
-        start.width !in G.W_MIN..G.W_MAX ->
+        theirs == null -> {
+            Handshake.Failed("no HELLO from the peer")
+        }
+
+        start == null -> {
+            Handshake.Failed("no MATCH_START from the host")
+        }
+
+        start.width !in G.W_MIN..G.W_MAX -> {
             Handshake.Failed("the host asked for an impossible width: ${start.width}")
+        }
 
-        start.startingPlayer !in 0..1 ->
+        start.startingPlayer !in 0..1 -> {
             Handshake.Failed("the host named a player that does not exist: ${start.startingPlayer}")
+        }
 
-        else ->
+        else -> {
             Handshake.Agreed(
                 MatchConfig(start.seed, start.width, start.roundsToWin, start.startingPlayer),
                 theirs.nick,
             )
+        }
     }
 }
 

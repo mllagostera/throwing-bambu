@@ -70,20 +70,24 @@ fun PairingScreen(
             }
 
             when (state.role) {
-                null ->
+                null -> {
                     RoleChoice(
                         onHost = { viewModel.host(context, nick, width) },
                         onJoin = { viewModel.joinAs(context, nick) },
                     )
+                }
 
-                PairingRole.HOST -> Status(stringResource(R.string.pair_hosting), state.link)
+                PairingRole.HOST -> {
+                    Status(stringResource(R.string.pair_hosting), state.link)
+                }
 
-                PairingRole.GUEST ->
+                PairingRole.GUEST -> {
                     PeerList(
                         peers = state.peers,
                         link = state.link,
                         onPick = { viewModel.connectTo(it, nick, width) },
                     )
+                }
             }
 
             OutlinedButton(
